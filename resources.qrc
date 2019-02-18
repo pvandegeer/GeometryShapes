@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/plugins/GeometryShapes" >
+        <file>mActionCapturePolygonRectangle.svg</file>
+    </qresource>
+    <qresource prefix="/plugins/GeometryShapes" >
+        <file>mActionCapturePolygonCircle.svg</file>
+    </qresource>
+</RCC>
