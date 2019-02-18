@@ -27,19 +27,19 @@ from qgis.core import QGis, QgsPoint, QgsRectangle, QgsGeometry, QgsFeature
 from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
 from geometry_shapes_dialog import GeometryShapesDialog
 
+
 class RectangleGeometryTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.dlg = GeometryShapesDialog()
         self.capturing = False
         self.rubberBand = None
-        self.startPoint = self.endPoint = None
-
+        self.startPoint = None
+        self.endPoint = None
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
 
     def reset(self):
         self.capturing = False
-
 
     def startCapturing(self):
         # fixme: get user defined current setting
@@ -67,7 +67,6 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         result = self.dlg.exec_()
         if result:
             # values are adjusted
-            # fixme: check input
             if self.startPoint.x() < self.endPoint.x():
                 self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
             else:
@@ -83,8 +82,8 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
 
         # reset
         self.rubberBand = None
-        self.startPoint = self.endPoint = None
-
+        self.startPoint = None
+        self.endPoint = None
 
     def canvasReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -118,10 +117,11 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         self.rubberBand.show()
 
     def draw_rectangle(self):
-        geometry = QgsGeometry.fromRect(self.rectangle())
-        feature = QgsFeature()
-        feature.setGeometry(geometry)
         layer = self.canvas.currentLayer()
+        fields = layer.dataProvider().fields()
+        geometry = QgsGeometry.fromRect(self.rectangle())
+        feature = QgsFeature(fields, 0)
+        feature.setGeometry(geometry)
         layer.addFeature(feature)
 
     def rectangle(self):
@@ -134,4 +134,3 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
 
     def deactivate(self):
         super(RectangleGeometryTool, self).deactivate()
-        # self.emit(SIGNAL("deactivated()"))
