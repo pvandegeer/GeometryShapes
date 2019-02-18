@@ -229,8 +229,7 @@ class GeometryShapes:
                 layer.editingStopped.connect(self.toggle)
 
             if (layer.isEditable() and layer.geometryType() == QGis.Polygon):
-                self.actions[0].setEnabled(True)  # CADDigitize
-                #self.actions[3].setEnabled(True)  # Numerical Digitize
+                self.actions[0].setEnabled(True)
             else:
-                self.actions[0].setEnabled(False)  # CADDigitize
-                #self.actions[3].setEnabled(False)  # Numerical Digitize
+                self.actions[0].setEnabled(False)
+                self.draw_rectangle(False)
