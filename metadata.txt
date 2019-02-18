@@ -1,0 +1,39 @@
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
+
+# This file should be included when you package your plugin.
+# Mandatory items:
+
+[general]
+name=Geometry Shapes
+qgisMinimumVersion=2.0
+description=This plugin draws basic geometry shapes with user defined measurements
+version=0.2
+author=P. van de Geer
+email=pvandegeer@gmail.com
+
+about=This plugin draws basic geometry shapes with user defined measurements. Options are rectangles, squares and circles.
+
+tracker=https://github.com/pvandegeer/GeometryShapes/issues
+repository=https://github.com/pvandegeer/GeometryShapes
+# End of mandatory metadata
+
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+changelog=Work with geometry with fields; plus minor fixes
+
+# Tags are comma separated with spaces allowed
+tags=geometry, fixed size, square
+
+homepage=https://github.com/pvandegeer/GeometryShapes
+category=Vector
+icon=geomtery_shapes.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
