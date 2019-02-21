@@ -23,12 +23,13 @@
 """
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QColor
-from qgis.core import QGis, QgsPoint, QgsRectangle, QgsGeometry, QgsFeature
+from qgis.core import QGis, QgsDistanceArea, QgsMessageLog
+from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature, QgsCircularStringV2, QgsPointV2
 from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
 from geometry_shapes_dialog import GeometryShapesDialog
+import math
 
-
-class RectangleGeometryTool(QgsMapToolEmitPoint):
+class GeometryTool(QgsMapToolEmitPoint):
     def __init__(self, canvas):
         self.dlg = GeometryShapesDialog()
         self.capturing = False
@@ -42,9 +43,6 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         self.capturing = False
 
     def startCapturing(self):
-        # fixme: get user defined current setting
-        # from qgis.PyQt.QtCore import QSettings
-        # disableDialog = QSettings().value('/qgis/digitizing/disable_enter_attribute_values_dialog')
         self.rubberBand = QgsRubberBand(self.canvas, True)
         # self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
         self.rubberBand.setBorderColor(QColor(255, 0, 0, 255))
@@ -53,6 +51,96 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         self.rubberBand.setLineStyle(Qt.DotLine)
         self.setCursor(Qt.CrossCursor)
         self.capturing = True
+
+    def stopCapturing(self):
+        pass
+
+    def canvasReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if not self.capturing:
+                self.startCapturing()
+                self.startPoint = self.toMapCoordinates(event.pos())
+                self.endPoint = self.startPoint
+            else:
+                self.endPoint = self.toMapCoordinates(event.pos())
+                self.stopCapturing()
+
+    def canvasMoveEvent(self, event):
+        if self.capturing:
+            self.endPoint = self.toMapCoordinates(event.pos())
+            self.show_shape(self.startPoint, self.endPoint)
+
+    def show_shape(self, startPoint, endPoint):
+        pass
+
+    def draw_shape(self):
+        layer = self.canvas.currentLayer()
+        feature = QgsFeature()
+        feature.setGeometry(self.shape())
+        pr = layer.dataProvider()
+        pr.addFeatures([feature])
+
+    def shape(self):
+        pass
+
+    # fixme: use for cleanup?
+    # def deactivate(self):
+    #     super(GeometryTool, self).deactivate()
+
+
+class OvalGeometryTool(GeometryTool):
+
+    def stopCapturing(self):
+        self.capturing = False
+        if self.rubberBand:
+            self.canvas.scene().removeItem(self.rubberBand)
+
+        # rect = self.rectangle()
+        # self.dlg.width.setValue(rect.width())
+        # self.dlg.height.setValue(rect.height())
+        # self.dlg.show()
+        #
+        # result = self.dlg.exec_()
+        # if result:
+        #     # values are adjusted
+
+        self.draw_shape()
+        self.canvas.refresh()
+
+        # reset
+        self.rubberBand = None
+        self.startPoint = None
+        self.endPoint = None
+
+    def show_shape(self, startPoint, endPoint):
+        self.rubberBand.reset(QGis.Polygon)
+        if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
+            return
+
+        geom = self.shape()
+        layer = self.canvas.currentLayer()
+        self.rubberBand.setToGeometry(geom, layer)
+        self.rubberBand.show()
+
+    def shape_future(self):
+        circle = QgsCircularStringV2()
+        point1 = QgsPointV2(self.startPoint.x(), self.startPoint.y())
+        point2 = QgsPointV2(self.endPoint.x(), self.endPoint.y())
+        circle.setPoints([point1, point2, point1])
+        return QgsGeometry(circle)
+
+    def shape(self):
+        distance = QgsDistanceArea()
+        r = distance.measureLine(self.startPoint, self.endPoint)
+        # multiply radius for number of segments
+        seg = int(20+math.sqrt(r))
+        return QgsGeometry.fromPoint(QgsPoint(self.startPoint.x(), self.startPoint.y())).buffer(r, seg)
+
+    def radius(self):
+        pass
+
+
+class RectangleGeometryTool(GeometryTool):
 
     def stopCapturing(self):
         self.capturing = False
@@ -77,7 +165,7 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
             else:
                 self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
 
-            self.draw_rectangle()
+            self.draw_shape()
             self.canvas.refresh()
 
         # reset
@@ -85,22 +173,7 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         self.startPoint = None
         self.endPoint = None
 
-    def canvasReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            if not self.capturing:
-                self.startCapturing()
-                self.startPoint = self.toMapCoordinates(event.pos())
-                self.endPoint = self.startPoint
-            else:
-                self.endPoint = self.toMapCoordinates(event.pos())
-                self.stopCapturing()
-
-    def canvasMoveEvent(self, event):
-        if self.capturing:
-            self.endPoint = self.toMapCoordinates(event.pos())
-            self.showRect(self.startPoint, self.endPoint)
-
-    def showRect(self, startPoint, endPoint):
+    def show_shape(self, startPoint, endPoint):
         self.rubberBand.reset(QGis.Polygon)
         if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
             return
@@ -116,13 +189,8 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
         self.rubberBand.addPoint(point4, True)  # true to update canvas
         self.rubberBand.show()
 
-    def draw_rectangle(self):
-        layer = self.canvas.currentLayer()
-        fields = layer.dataProvider().fields()
-        geometry = QgsGeometry.fromRect(self.rectangle())
-        feature = QgsFeature(fields, 0)
-        feature.setGeometry(geometry)
-        layer.addFeature(feature)
+    def shape(self):
+        return QgsGeometry.fromRect(self.rectangle())
 
     def rectangle(self):
         if self.startPoint is None or self.endPoint is None:
@@ -131,6 +199,3 @@ class RectangleGeometryTool(QgsMapToolEmitPoint):
             return None
 
         return QgsRectangle(self.startPoint, self.endPoint)
-
-    def deactivate(self):
-        super(RectangleGeometryTool, self).deactivate()
