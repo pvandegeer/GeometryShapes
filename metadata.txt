@@ -11,7 +11,7 @@
 name=Geometry Shapes
 qgisMinimumVersion=2.0
 description=This plugin draws basic geometry shapes with user defined measurements
-version=0.2
+version=0.3
 author=P. van de Geer
 email=pvandegeer@gmail.com
 
@@ -24,10 +24,12 @@ repository=https://github.com/pvandegeer/GeometryShapes
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=Work with geometry with fields; plus minor fixes
+changelog=
+0.2  Work with geometry with fields; plus minor fixes
+0.3  Add basic support for circles
 
 # Tags are comma separated with spaces allowed
-tags=geometry, fixed size, square
+tags=geometry, fixed size, square, circle
 
 homepage=https://github.com/pvandegeer/GeometryShapes
 category=Vector
