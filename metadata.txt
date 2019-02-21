@@ -24,16 +24,14 @@ repository=https://github.com/pvandegeer/GeometryShapes
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=
-0.2  Work with geometry with fields; plus minor fixes
-0.3  Add basic support for circles
+changelog=0.3  Add basic support for circles
 
 # Tags are comma separated with spaces allowed
 tags=geometry, fixed size, square, circle
 
 homepage=https://github.com/pvandegeer/GeometryShapes
 category=Vector
-icon=geomtery_shapes.png
+icon=geometry_shapes.png
 # experimental flag
 experimental=True
 
