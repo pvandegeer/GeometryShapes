@@ -22,30 +22,39 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QColor
+from PyQt4.QtGui import QColor, QApplication
 from qgis.core import QGis, QgsDistanceArea, QgsMessageLog
 from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature, QgsCircularStringV2, QgsPointV2
-from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand
+from qgis.gui import QgsMapTool, QgsRubberBand
 from geometry_shapes_dialog import GeometryShapesDialog
 import math
 
-class GeometryTool(QgsMapToolEmitPoint):
+
+class GeometryTool(QgsMapTool):
     def __init__(self, canvas):
         self.dlg = GeometryShapesDialog()
         self.capturing = False
-        self.rubberBand = None
         self.startPoint = None
         self.endPoint = None
+        self.rubberBand = None
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
 
+    # def flags(self):
+    #     return QgsMapTool.editTool
+
     def reset(self):
         self.capturing = False
+        self.startPoint = None
+        self.endPoint = None
+        if self.rubberBand is not None:
+            self.canvas.scene().removeItem(self.rubberBand)
+        self.rubberBand = None
 
     def startCapturing(self):
+        # Fixme: use system settings
         self.rubberBand = QgsRubberBand(self.canvas, True)
-        # self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
-        self.rubberBand.setBorderColor(QColor(255, 0, 0, 255))
+        self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
         self.rubberBand.setColor(QColor(255, 0, 0, 31))
         self.rubberBand.setWidth(1)
         self.rubberBand.setLineStyle(Qt.DotLine)
@@ -56,19 +65,45 @@ class GeometryTool(QgsMapToolEmitPoint):
         pass
 
     def canvasReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if (event.button() == Qt.LeftButton):
             if not self.capturing:
                 self.startCapturing()
                 self.startPoint = self.toMapCoordinates(event.pos())
                 self.endPoint = self.startPoint
             else:
-                self.endPoint = self.toMapCoordinates(event.pos())
+                self.capture_position(event)
                 self.stopCapturing()
+        elif (event.button() == Qt.RightButton):
+            self.reset()
+
 
     def canvasMoveEvent(self, event):
         if self.capturing:
-            self.endPoint = self.toMapCoordinates(event.pos())
+            self.capture_position(event)
             self.show_shape(self.startPoint, self.endPoint)
+
+    def capture_position(self, event):
+        # adjust dimension if Shift key is pressed
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            end_point = QgsPoint(self.toMapCoordinates(event.pos()))
+            # fixme: check for null?
+            rect = QgsRectangle(self.startPoint, end_point)
+            # fixme: capture 0 width and height
+            if rect.width() > rect.height():
+                # make height (y) same as width in the correct direction
+                if self.startPoint.y() < end_point.y():
+                    end_point.setY(self.startPoint.y() + rect.width())
+                else:
+                    end_point.setY(self.startPoint.y() - rect.width())
+            else:
+                # make width (x) same as height in the correct direction
+                if self.startPoint.x() < end_point.x():
+                    end_point.setX(self.startPoint.x() + rect.height())
+                else:
+                    end_point.setX(self.startPoint.x() - rect.height())
+            self.endPoint = end_point
+        else:
+            self.endPoint = self.toMapCoordinates(event.pos())
 
     def show_shape(self, startPoint, endPoint):
         pass
@@ -82,6 +117,14 @@ class GeometryTool(QgsMapToolEmitPoint):
 
     def shape(self):
         pass
+
+    def bounding_box(self):
+        if self.startPoint is None or self.endPoint is None:
+            return None
+        elif self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
+            return None
+
+        return QgsRectangle(self.startPoint, self.endPoint)
 
     # fixme: use for cleanup?
     # def deactivate(self):
@@ -144,10 +187,10 @@ class RectangleGeometryTool(GeometryTool):
 
     def stopCapturing(self):
         self.capturing = False
-        if self.rubberBand:
-            self.canvas.scene().removeItem(self.rubberBand)
+        # if self.rubberBand:
+        #     self.canvas.scene().removeItem(self.rubberBand)
 
-        rect = self.rectangle()
+        rect = self.bounding_box()
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
         self.dlg.show()
@@ -168,34 +211,17 @@ class RectangleGeometryTool(GeometryTool):
             self.draw_shape()
             self.canvas.refresh()
 
-        # reset
-        self.rubberBand = None
-        self.startPoint = None
-        self.endPoint = None
+        self.reset()
 
+    # fixme: argumenten hebben weinig zin tenzij shape() ze meekrijgt
     def show_shape(self, startPoint, endPoint):
         self.rubberBand.reset(QGis.Polygon)
         if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
             return
 
-        point1 = QgsPoint(startPoint.x(), startPoint.y())
-        point2 = QgsPoint(startPoint.x(), endPoint.y())
-        point3 = QgsPoint(endPoint.x(), endPoint.y())
-        point4 = QgsPoint(endPoint.x(), startPoint.y())
-
-        self.rubberBand.addPoint(point1, False)
-        self.rubberBand.addPoint(point2, False)
-        self.rubberBand.addPoint(point3, False)
-        self.rubberBand.addPoint(point4, True)  # true to update canvas
+        self.rubberBand.setToGeometry(self.shape(), self.canvas.currentLayer())
         self.rubberBand.show()
 
     def shape(self):
-        return QgsGeometry.fromRect(self.rectangle())
+        return QgsGeometry.fromRect(self.bounding_box())
 
-    def rectangle(self):
-        if self.startPoint is None or self.endPoint is None:
-            return None
-        elif self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
-            return None
-
-        return QgsRectangle(self.startPoint, self.endPoint)
