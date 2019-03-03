@@ -23,8 +23,8 @@
 """
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QColor, QApplication
-from qgis.core import QGis, QgsDistanceArea, QgsMessageLog
-from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature, QgsCircularStringV2, QgsPointV2
+from qgis.core import QGis, QgsMessageLog
+from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature
 from qgis.gui import QgsMapTool, QgsRubberBand
 from geometry_shapes_dialog import GeometryShapesDialog
 import math
@@ -37,11 +37,15 @@ class GeometryTool(QgsMapTool):
         self.startPoint = None
         self.endPoint = None
         self.rubberBand = None
+        self.helperBand = None
         self.canvas = canvas
-        QgsMapToolEmitPoint.__init__(self, self.canvas)
+        QgsMapTool.__init__(self, self.canvas)
 
-    # def flags(self):
-    #     return QgsMapTool.editTool
+    def flags(self):
+        return QgsMapTool.EditTool
+
+    def isEditTool(self):
+        return True
 
     def reset(self):
         self.capturing = False
@@ -49,23 +53,57 @@ class GeometryTool(QgsMapTool):
         self.endPoint = None
         if self.rubberBand is not None:
             self.canvas.scene().removeItem(self.rubberBand)
+        if self.helperBand is not None:
+            self.canvas.scene().removeItem(self.helperBand)
         self.rubberBand = None
+        self.helperBand = None
 
     def startCapturing(self):
         # Fixme: use system settings
         self.rubberBand = QgsRubberBand(self.canvas, True)
         self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
-        self.rubberBand.setColor(QColor(255, 0, 0, 31))
+        self.rubberBand.setFillColor(QColor(255, 0, 0, 31))
         self.rubberBand.setWidth(1)
         self.rubberBand.setLineStyle(Qt.DotLine)
+
+        self.helperBand = QgsRubberBand(self.canvas, True)
+        self.helperBand.setBorderColor(Qt.gray)
+        self.helperBand.setFillColor(QColor(0, 0, 0, 0))
+        self.helperBand.setWidth(1)
+        self.helperBand.setLineStyle(Qt.DotLine)
+
         self.setCursor(Qt.CrossCursor)
         self.capturing = True
 
     def stopCapturing(self):
-        pass
+        self.capturing = False
+
+        # fixme: force ratio on Shift-Click?
+        rect = self.selection_rect()
+        self.dlg.width.setValue(rect.width())
+        self.dlg.height.setValue(rect.height())
+        self.dlg.show()
+
+        result = self.dlg.exec_()
+        if result:
+            # values are adjusted
+            if self.startPoint.x() < self.endPoint.x():
+                self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
+            else:
+                self.endPoint.setX(self.startPoint.x() - self.dlg.width.value())
+
+            if self.startPoint.y() < self.endPoint.y():
+                self.endPoint.setY(self.startPoint.y() + self.dlg.height.value())
+            else:
+                self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
+
+            self.draw_shape()
+            self.canvas.refresh()
+
+        self.reset()
 
     def canvasReleaseEvent(self, event):
-        if (event.button() == Qt.LeftButton):
+        if event.button() == Qt.LeftButton:
             if not self.capturing:
                 self.startCapturing()
                 self.startPoint = self.toMapCoordinates(event.pos())
@@ -73,14 +111,14 @@ class GeometryTool(QgsMapTool):
             else:
                 self.capture_position(event)
                 self.stopCapturing()
-        elif (event.button() == Qt.RightButton):
+        elif event.button() == Qt.RightButton:
             self.reset()
 
-
+    # fixme: use tooltip to show dimensions
     def canvasMoveEvent(self, event):
         if self.capturing:
             self.capture_position(event)
-            self.show_shape(self.startPoint, self.endPoint)
+            self.show_shape()
 
     def capture_position(self, event):
         # adjust dimension if Shift key is pressed
@@ -105,7 +143,7 @@ class GeometryTool(QgsMapTool):
         else:
             self.endPoint = self.toMapCoordinates(event.pos())
 
-    def show_shape(self, startPoint, endPoint):
+    def show_shape(self):
         pass
 
     def draw_shape(self):
@@ -118,7 +156,7 @@ class GeometryTool(QgsMapTool):
     def shape(self):
         pass
 
-    def bounding_box(self):
+    def selection_rect(self):
         if self.startPoint is None or self.endPoint is None:
             return None
         elif self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
@@ -132,96 +170,65 @@ class GeometryTool(QgsMapTool):
 
 
 class OvalGeometryTool(GeometryTool):
-
     def stopCapturing(self):
-        self.capturing = False
-        if self.rubberBand:
-            self.canvas.scene().removeItem(self.rubberBand)
+        self.dlg.label.setText("Radius (x)")
+        self.dlg.label_2.setText("Radius (y)")
+        super(OvalGeometryTool, self).stopCapturing()
 
-        # rect = self.rectangle()
-        # self.dlg.width.setValue(rect.width())
-        # self.dlg.height.setValue(rect.height())
-        # self.dlg.show()
-        #
-        # result = self.dlg.exec_()
-        # if result:
-        #     # values are adjusted
-
-        self.draw_shape()
-        self.canvas.refresh()
-
-        # reset
-        self.rubberBand = None
-        self.startPoint = None
-        self.endPoint = None
-
-    def show_shape(self, startPoint, endPoint):
-        self.rubberBand.reset(QGis.Polygon)
-        if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
+    def show_shape(self):
+        if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
-        geom = self.shape()
         layer = self.canvas.currentLayer()
+        geom = self.shape()
+
+        self.rubberBand.reset(QGis.Polygon)
         self.rubberBand.setToGeometry(geom, layer)
         self.rubberBand.show()
 
-    def shape_future(self):
-        circle = QgsCircularStringV2()
-        point1 = QgsPointV2(self.startPoint.x(), self.startPoint.y())
-        point2 = QgsPointV2(self.endPoint.x(), self.endPoint.y())
-        circle.setPoints([point1, point2, point1])
-        return QgsGeometry(circle)
+        self.helperBand.reset(QGis.Polygon)
+        box = QgsGeometry.fromRect(geom.boundingBox())
+        line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
+        self.helperBand.setToGeometry(box, layer)
+        self.helperBand.addGeometry(line, layer)
+        self.helperBand.show()
 
     def shape(self):
-        distance = QgsDistanceArea()
-        r = distance.measureLine(self.startPoint, self.endPoint)
-        # multiply radius for number of segments
-        seg = int(20+math.sqrt(r))
-        return QgsGeometry.fromPoint(QgsPoint(self.startPoint.x(), self.startPoint.y())).buffer(r, seg)
+        seg = 50
+        coords = []
+        r_x = self.selection_rect().width()
+        r_y = self.selection_rect().height()
+        for i in range(seg):
+            angle = i * 2 * math.pi / seg
+            x = r_x * math.cos(angle)
+            y = r_y * math.sin(angle)
+            coords.append(QgsPoint(x, y))
+
+        # move to correct position
+        geom = QgsGeometry.fromPolygon([coords])
+        geom.translate(self.startPoint.x(), self.startPoint.y())
+        return geom
 
     def radius(self):
         pass
 
 
 class RectangleGeometryTool(GeometryTool):
-
-    def stopCapturing(self):
-        self.capturing = False
-        # if self.rubberBand:
-        #     self.canvas.scene().removeItem(self.rubberBand)
-
-        rect = self.bounding_box()
-        self.dlg.width.setValue(rect.width())
-        self.dlg.height.setValue(rect.height())
-        self.dlg.show()
-
-        result = self.dlg.exec_()
-        if result:
-            # values are adjusted
-            if self.startPoint.x() < self.endPoint.x():
-                self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
-            else:
-                self.endPoint.setX(self.startPoint.x() - self.dlg.width.value())
-
-            if self.startPoint.y() < self.endPoint.y():
-                self.endPoint.setY(self.startPoint.y() + self.dlg.height.value())
-            else:
-                self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
-
-            self.draw_shape()
-            self.canvas.refresh()
-
-        self.reset()
-
-    # fixme: argumenten hebben weinig zin tenzij shape() ze meekrijgt
-    def show_shape(self, startPoint, endPoint):
-        self.rubberBand.reset(QGis.Polygon)
-        if startPoint.x() == endPoint.x() or startPoint.y() == endPoint.y():
+    def show_shape(self):
+        if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
-        self.rubberBand.setToGeometry(self.shape(), self.canvas.currentLayer())
+        layer = self.canvas.currentLayer()
+
+        self.rubberBand.reset(QGis.Polygon)
+        self.rubberBand.setToGeometry(self.shape(), layer)
         self.rubberBand.show()
 
+        self.helperBand.reset(QGis.Line)
+        line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
+        self.helperBand.setToGeometry(line, layer)
+        self.helperBand.show()
+
     def shape(self):
-        return QgsGeometry.fromRect(self.bounding_box())
+        return QgsGeometry.fromRect(self.selection_rect())
 

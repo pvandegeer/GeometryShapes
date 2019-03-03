@@ -232,6 +232,7 @@ class GeometryShapes:
     # Some code here lifted from: https://gitlab.com/lbartoletti/CADDigitize/blob/master/CADDigitize.py
     # and copyright 2016 by Loïc BARTOLETTI
     def toggle(self):
+        QgsMessageLog.logMessage("Toggle")
         layer = self.canvas.currentLayer()
         # Decide whether the plugin button/menu is enabled or disabled
         if layer is not None:
