@@ -1,5 +1,5 @@
 # GeometryShapes
-This plugin draws basic geometry shapes with user defined measurements and also allows free drawing. 
+This QGis plugin draws basic geometry shapes with user defined measurements and also allows free drawing. 
 
 Features/usage:
 * Integrates in the digitizing toolbar. 
