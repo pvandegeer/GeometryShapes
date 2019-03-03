@@ -1,39 +1,30 @@
-# This file contains metadata for your plugin. Since 
-# version 2.0 of QGIS this is the proper way to supply 
-# information about a plugin. The old method of 
-# embedding metadata in __init__.py will 
-# is no longer supported since version 2.0.
-
-# This file should be included when you package your plugin.
-# Mandatory items:
-
 [general]
 name=Geometry Shapes
 qgisMinimumVersion=2.0
-description=This plugin draws basic geometry shapes with user defined measurements
-version=0.3
+description=This plugin draws basic geometry shapes (primitives) with user defined measurements
+version=0.4
 author=P. van de Geer
 email=pvandegeer@gmail.com
 
-about=This plugin draws basic geometry shapes with user defined measurements. Options are rectangles, squares and circles.
+about=This plugin draws basic geometry shapes with user defined measurements and also allows free drawing. Integrates in the digitizing toolbar. Options are rectangles, squares, ovals, and circles. Use shift to fix the aspect ratio and create perfect squares and circles.
 
 tracker=https://github.com/pvandegeer/GeometryShapes/issues
 repository=https://github.com/pvandegeer/GeometryShapes
-# End of mandatory metadata
 
-# Recommended items:
-
-# Uncomment the following line and add your changelog:
-changelog=0.3  Add basic support for circles
+changelog=0.4 Added ovals
+        Use Shift-key to switch between squares/rectangles and circles/ovals
+        Tips and feedback through gui
+        Lots of minor improvements
+    0.3 Add basic support for circles
+    0.2 Allow for geometries with fields
 
 # Tags are comma separated with spaces allowed
-tags=geometry, fixed size, square, circle
+tags=geometry, primitive, shape, fixed size, square, circle, oval, rectangle, digitizing
 
 homepage=https://github.com/pvandegeer/GeometryShapes
 category=Vector
 icon=geometry_shapes.png
-# experimental flag
-experimental=True
+experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
