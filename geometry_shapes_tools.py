@@ -22,10 +22,10 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QColor, QApplication
-from qgis.core import QGis, QgsMessageLog
-from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature
+from PyQt4.QtGui import QColor, QApplication, QToolTip
+from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature, QGis, QgsMessageLog
 from qgis.gui import QgsMapTool, QgsRubberBand
+from qgis.utils import iface
 from geometry_shapes_dialog import GeometryShapesDialog
 import math
 
@@ -114,11 +114,17 @@ class GeometryTool(QgsMapTool):
         elif event.button() == Qt.RightButton:
             self.reset()
 
-    # fixme: use tooltip to show dimensions
     def canvasMoveEvent(self, event):
         if self.capturing:
             self.capture_position(event)
             self.show_shape()
+
+            if self.canvas.underMouse():
+                rect = self.selection_rect()
+                if rect is not None:
+                    QToolTip.showText(self.canvas.mapToGlobal(self.canvas.mouseLastXY()),
+                                      self.tooltip_text(rect),
+                                      self.canvas)
 
     def capture_position(self, event):
         # adjust dimension if Shift key is pressed
@@ -164,9 +170,18 @@ class GeometryTool(QgsMapTool):
 
         return QgsRectangle(self.startPoint, self.endPoint)
 
-    # fixme: use for cleanup?
-    # def deactivate(self):
-    #     super(GeometryTool, self).deactivate()
+    def tooltip_text(self, rect):
+        pass
+
+    def activate(self):
+        self.statusBar = iface.mainWindow().statusBar()
+        self.statusBar.showMessage("Hold SHIFT to lock the ratio for perfect squares and circles")
+        super(GeometryTool, self).activate()
+
+    # fixme: use for further cleanup?
+    def deactivate(self):
+        self.statusBar.clearMessage()
+        super(GeometryTool, self).deactivate()
 
 
 class OvalGeometryTool(GeometryTool):
@@ -209,9 +224,12 @@ class OvalGeometryTool(GeometryTool):
         geom.translate(self.startPoint.x(), self.startPoint.y())
         return geom
 
-    def radius(self):
-        pass
-
+    def tooltip_text(self, rect):
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            text = "Radius: " + str(round(rect.width(), 2))
+        else:
+            text = "Radius x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
+        return text
 
 class RectangleGeometryTool(GeometryTool):
     def show_shape(self):
@@ -232,3 +250,9 @@ class RectangleGeometryTool(GeometryTool):
     def shape(self):
         return QgsGeometry.fromRect(self.selection_rect())
 
+    def tooltip_text(self, rect):
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            text = "Size: " + str(round(rect.width(), 2))
+        else:
+            text = "Size x/y: "  + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
+        return text

@@ -186,7 +186,7 @@ class GeometryShapes:
             icon_path,
             text=self.tr(u'Draw rectangle geometry'),
             #callback=self.draw_rectangle,
-            callback=lambda checked: self.draw_shape(checked, 0),
+            callback=lambda checked: self.set_tool(checked, 0),
             enabled_flag=False,
             add_to_toolbar=False,
             parent=self.iface.mainWindow())
@@ -196,7 +196,7 @@ class GeometryShapes:
             icon_path,
             text=self.tr(u'Draw oval geometry'),
             #callback=self.draw_oval,
-            callback=lambda checked: self.draw_shape(checked, 1),
+            callback=lambda checked: self.set_tool(checked, 1),
             enabled_flag=False,
             add_to_toolbar=False,
             parent=self.iface.mainWindow())
@@ -209,12 +209,12 @@ class GeometryShapes:
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolButtonAction  = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
 
-    def run(self):
-        """Run method that performs all the real work"""
-        pass
+    # def run(self):
+    #     """Run method that performs all the real work"""
+    #     pass
 
     # fixme: change cursor
-    def draw_shape(self, checked, action):
+    def set_tool(self, checked, action):
         if not checked:
             self.canvas.unsetMapTool(self.tool)
             self.tool = None
@@ -257,7 +257,7 @@ class GeometryShapes:
             else:
                 self.actions[0].setEnabled(False)
                 self.actions[1].setEnabled(False)
-                self.draw_shape(False, -1)
+                self.set_tool(False, -1)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
