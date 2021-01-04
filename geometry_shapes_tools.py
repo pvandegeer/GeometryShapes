@@ -5,9 +5,9 @@
                                  A QGIS plugin
  This plugin draws basic geometry shapes with user defined measurements
                               -------------------
-        begin                : 2019-02-16
+        begin                : 2020-07-29
         git sha              : $Format:%H$
-        copyright            : (C) 2019 by P. van de Geer
+        copyright            : (C) 2020 by P. van de Geer
                                (C) 2019 PyQGis Developer Cookbook
         email                : pvandegeer@gmail.com
  ***************************************************************************/
@@ -21,13 +21,29 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QColor, QApplication, QToolTip
-from qgis.core import QgsPoint, QgsRectangle, QgsGeometry, QgsFeature, QGis, QgsMessageLog
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtGui import QColor
+from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog
 from qgis.gui import QgsMapTool, QgsRubberBand
 from qgis.utils import iface
-from geometry_shapes_dialog import GeometryShapesDialog
 import math
+
+from sys import version_info
+
+if version_info[0] >= 3:
+    from qgis.PyQt.QtWidgets import QApplication, QToolTip
+    from qgis.core import QgsWkbTypes, QgsPointXY
+    from .geometry_shapes_dialog import GeometryShapesDialog
+
+    _polygon = QgsWkbTypes.PolygonGeometry
+    _line = QgsWkbTypes.LineGeometry
+else:
+    from qgis.PyQt.QtGui import QApplication, QToolTip
+    from qgis.core import QGis, QgsPoint as QgsPointXY
+    from geometry_shapes_dialog import GeometryShapesDialog
+
+    _polygon = QGis.Polygon
+    _line = QGis.Line
 
 
 class GeometryTool(QgsMapTool):
@@ -60,14 +76,16 @@ class GeometryTool(QgsMapTool):
 
     def startCapturing(self):
         # Fixme: use system settings
-        self.rubberBand = QgsRubberBand(self.canvas, True)
-        self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
+        self.rubberBand = QgsRubberBand(self.canvas, _polygon)
+        # self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
+        self.rubberBand.setColor(QColor(255, 0, 0, 199))
         self.rubberBand.setFillColor(QColor(255, 0, 0, 31))
         self.rubberBand.setWidth(1)
         self.rubberBand.setLineStyle(Qt.DotLine)
 
-        self.helperBand = QgsRubberBand(self.canvas, True)
-        self.helperBand.setBorderColor(Qt.gray)
+        self.helperBand = QgsRubberBand(self.canvas, _polygon)
+        # self.helperBand.setBorderColor(Qt.gray)
+        self.helperBand.setColor(Qt.gray)
         self.helperBand.setFillColor(QColor(0, 0, 0, 0))
         self.helperBand.setWidth(1)
         self.helperBand.setLineStyle(Qt.DotLine)
@@ -78,8 +96,14 @@ class GeometryTool(QgsMapTool):
     def stopCapturing(self):
         self.capturing = False
 
-        # fixme: force ratio on Shift-Click?
+        # todo: force ratio on Shift-Click?
         rect = self.selection_rect()
+
+        # fixme: need to find out why this sometimes happens
+        if not rect:
+            self.reset()
+            return
+
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
         self.dlg.show()
@@ -129,7 +153,7 @@ class GeometryTool(QgsMapTool):
     def capture_position(self, event):
         # adjust dimension if Shift key is pressed
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-            end_point = QgsPoint(self.toMapCoordinates(event.pos()))
+            end_point = QgsPointXY(self.toMapCoordinates(event.pos()))
             # fixme: check for null?
             rect = QgsRectangle(self.startPoint, end_point)
             # fixme: capture 0 width and height
@@ -178,7 +202,7 @@ class GeometryTool(QgsMapTool):
         self.statusBar.showMessage("Hold SHIFT to lock the ratio for perfect squares and circles")
         super(GeometryTool, self).activate()
 
-    # fixme: use for further cleanup?
+    # todo: use for further cleanup?
     def deactivate(self):
         self.statusBar.clearMessage()
         super(GeometryTool, self).deactivate()
@@ -197,13 +221,16 @@ class OvalGeometryTool(GeometryTool):
         layer = self.canvas.currentLayer()
         geom = self.shape()
 
-        self.rubberBand.reset(QGis.Polygon)
+        self.rubberBand.reset(_polygon)
         self.rubberBand.setToGeometry(geom, layer)
         self.rubberBand.show()
 
-        self.helperBand.reset(QGis.Polygon)
+        self.helperBand.reset(_polygon)
         box = QgsGeometry.fromRect(geom.boundingBox())
-        line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
+        if version_info[0] >= 3:
+            line = QgsGeometry.fromPolylineXY([self.startPoint, self.endPoint])
+        else:
+            line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
         self.helperBand.setToGeometry(box, layer)
         self.helperBand.addGeometry(line, layer)
         self.helperBand.show()
@@ -217,10 +244,13 @@ class OvalGeometryTool(GeometryTool):
             angle = i * 2 * math.pi / seg
             x = r_x * math.cos(angle)
             y = r_y * math.sin(angle)
-            coords.append(QgsPoint(x, y))
+            coords.append(QgsPointXY(x, y))
 
         # move to correct position
-        geom = QgsGeometry.fromPolygon([coords])
+        if version_info[0] >= 3:
+            geom = QgsGeometry.fromPolygonXY([coords])
+        else:
+            geom = QgsGeometry.fromPolygon([coords])
         geom.translate(self.startPoint.x(), self.startPoint.y())
         return geom
 
@@ -231,6 +261,7 @@ class OvalGeometryTool(GeometryTool):
             text = "Radius x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
         return text
 
+
 class RectangleGeometryTool(GeometryTool):
     def show_shape(self):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
@@ -238,12 +269,16 @@ class RectangleGeometryTool(GeometryTool):
 
         layer = self.canvas.currentLayer()
 
-        self.rubberBand.reset(QGis.Polygon)
+        self.rubberBand.reset(_polygon)
         self.rubberBand.setToGeometry(self.shape(), layer)
         self.rubberBand.show()
+        self.helperBand.reset(_line)
 
-        self.helperBand.reset(QGis.Line)
-        line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
+        if version_info[0] >= 3:
+            line = QgsGeometry.fromPolylineXY([self.startPoint, self.endPoint])
+        else:
+            line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
+
         self.helperBand.setToGeometry(line, layer)
         self.helperBand.show()
 
@@ -254,5 +289,5 @@ class RectangleGeometryTool(GeometryTool):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             text = "Size: " + str(round(rect.width(), 2))
         else:
-            text = "Size x/y: "  + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
+            text = "Size x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
         return text

@@ -5,9 +5,9 @@
                                  A QGIS plugin
  This plugin draws basic geometry shapes with user defined measurements
                               -------------------
-        begin                : 2019-02-16
+        begin                : 2020-07-29
         git sha              : $Format:%H$
-        copyright            : (C) 2019 by P. van de Geer
+        copyright            : (C) 2020 by P. van de Geer
         email                : pvandegeer@gmail.com
  ***************************************************************************/
 
@@ -20,14 +20,23 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QMenu, QToolButton, QAction, QIcon
-from qgis.core import QgsApplication, QGis, QgsMapLayer, QgsMessageLog
-# Initialize Qt resources from file resources.py
-import resources
-# Import the code for the dialog
-from geometry_shapes_tools import RectangleGeometryTool, OvalGeometryTool
 import os.path
+from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
+from qgis.PyQt.QtGui import QIcon
+from qgis.core import QgsApplication, QgsMapLayer, QgsMessageLog
+
+from sys import version_info
+
+if version_info[0] >= 3:
+    from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton  # Qt5
+    from qgis.core import QgsWkbTypes
+    from .resources3 import *
+    from .geometry_shapes_tools import RectangleGeometryTool, OvalGeometryTool
+else:
+    from qgis.PyQt.QtGui import QAction, QMenu, QToolButton  # Qt4
+    from qgis.core import QGis
+    import resources
+    from geometry_shapes_tools import RectangleGeometryTool, OvalGeometryTool
 
 
 class GeometryShapes:
@@ -92,18 +101,18 @@ class GeometryShapes:
         return QCoreApplication.translate('GeometryShapes', message)
 
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        insert_before=0,
-        checkable=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            insert_before=0,
+            checkable=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -185,7 +194,7 @@ class GeometryShapes:
         self.add_action(
             icon_path,
             text=self.tr(u'Draw rectangle geometry'),
-            #callback=self.draw_rectangle,
+            # callback=self.draw_rectangle,
             callback=lambda checked: self.set_tool(checked, 0),
             enabled_flag=False,
             add_to_toolbar=False,
@@ -195,7 +204,7 @@ class GeometryShapes:
         self.add_action(
             icon_path,
             text=self.tr(u'Draw oval geometry'),
-            #callback=self.draw_oval,
+            # callback=self.draw_oval,
             callback=lambda checked: self.set_tool(checked, 1),
             enabled_flag=False,
             add_to_toolbar=False,
@@ -207,7 +216,7 @@ class GeometryShapes:
         self.toolButton.setMenu(self.popupMenu)
         self.toolButton.setDefaultAction(self.actions[0])
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
-        self.toolButtonAction  = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
+        self.toolButtonAction = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
 
     # def run(self):
     #     """Run method that performs all the real work"""
@@ -232,7 +241,12 @@ class GeometryShapes:
     # Some code here lifted from: https://gitlab.com/lbartoletti/CADDigitize/blob/master/CADDigitize.py
     # and copyright 2016 by Loïc BARTOLETTI
     def toggle(self):
-        QgsMessageLog.logMessage("Toggle")
+        try:
+            _polygon = QgsWkbTypes.PolygonGeometry  # QGis3
+        except:
+            _polygon = QGis.Polygon  # QGis2
+
+        # QgsMessageLog.logMessage("Toggle")
         layer = self.canvas.currentLayer()
         # Decide whether the plugin button/menu is enabled or disabled
         if layer is not None:
@@ -251,7 +265,7 @@ class GeometryShapes:
                 layer.editingStarted.connect(self.toggle)
                 layer.editingStopped.connect(self.toggle)
 
-            if (layer.isEditable() and layer.geometryType() == QGis.Polygon):
+            if (layer.isEditable() and layer.geometryType() == _polygon):
                 self.actions[0].setEnabled(True)
                 self.actions[1].setEnabled(True)
             else:
