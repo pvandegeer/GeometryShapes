@@ -1,4 +1,4 @@
-# GeometryShapes
+# Geometry Shapes
 This QGis plugin draws basic geometry shapes with user defined measurements and also allows free drawing. 
 
 Features/usage:
@@ -7,6 +7,7 @@ Features/usage:
 * Use shift to fix the aspect ratio and create perfect squares and circles.
 
 ## Changelog
+* 0.5 Make QGis3 compatible
 * 0.4 Added ovals
     Use Shift-key to switch between squares/rectangles and circles/ovals
     Tips and feedback through gui

@@ -1,8 +1,9 @@
 [general]
 name=Geometry Shapes
 qgisMinimumVersion=2.0
+qgisMaximumVersion=3.99
 description=This plugin draws basic geometry shapes (primitives) with user defined measurements
-version=0.4
+version=0.5
 author=P. van de Geer
 email=pvandegeer@gmail.com
 
@@ -11,7 +12,8 @@ about=This plugin draws basic geometry shapes with user defined measurements and
 tracker=https://github.com/pvandegeer/GeometryShapes/issues
 repository=https://github.com/pvandegeer/GeometryShapes
 
-changelog=0.4 Added ovals
+changelog=0.5 Make QGis3 compatible
+    0.4 Added ovals
         Use Shift-key to switch between squares/rectangles and circles/ovals
         Tips and feedback through gui
         Lots of minor improvements
