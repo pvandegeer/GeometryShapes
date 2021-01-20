@@ -7,7 +7,7 @@
                               -------------------
         begin                : 2020-07-29
         git sha              : $Format:%H$
-        copyright            : (C) 2020 by P. van de Geer
+        copyright            : (C) 2021 by P. van de Geer
                                (C) 2019 PyQGis Developer Cookbook
         email                : pvandegeer@gmail.com
  ***************************************************************************/
@@ -21,14 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 """
+import math
+from sys import version_info
+
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog
-from qgis.gui import QgsMapTool, QgsRubberBand
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
 from qgis.utils import iface
-import math
-
-from sys import version_info
 
 if version_info[0] >= 3:
     from qgis.PyQt.QtWidgets import QApplication, QToolTip
@@ -73,18 +73,17 @@ class GeometryTool(QgsMapTool):
             self.canvas.scene().removeItem(self.helperBand)
         self.rubberBand = None
         self.helperBand = None
+        self.canvas.refresh()
 
     def startCapturing(self):
         # Fixme: use system settings
         self.rubberBand = QgsRubberBand(self.canvas, _polygon)
-        # self.rubberBand.setBorderColor(QColor(255, 0, 0, 199))
         self.rubberBand.setColor(QColor(255, 0, 0, 199))
         self.rubberBand.setFillColor(QColor(255, 0, 0, 31))
         self.rubberBand.setWidth(1)
         self.rubberBand.setLineStyle(Qt.DotLine)
 
         self.helperBand = QgsRubberBand(self.canvas, _polygon)
-        # self.helperBand.setBorderColor(Qt.gray)
         self.helperBand.setColor(Qt.gray)
         self.helperBand.setFillColor(QColor(0, 0, 0, 0))
         self.helperBand.setWidth(1)
@@ -95,8 +94,6 @@ class GeometryTool(QgsMapTool):
 
     def stopCapturing(self):
         self.capturing = False
-
-        # todo: force ratio on Shift-Click?
         rect = self.selection_rect()
 
         # fixme: need to find out why this sometimes happens
@@ -122,9 +119,8 @@ class GeometryTool(QgsMapTool):
                 self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
 
             self.draw_shape()
-            self.canvas.refresh()
-
-        self.reset()
+        else:
+            self.reset()
 
     def canvasReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -151,12 +147,16 @@ class GeometryTool(QgsMapTool):
                                       self.canvas)
 
     def capture_position(self, event):
-        # adjust dimension if Shift key is pressed
+        # adjust dimension on the fly if Shift is pressed
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             end_point = QgsPointXY(self.toMapCoordinates(event.pos()))
-            # fixme: check for null?
             rect = QgsRectangle(self.startPoint, end_point)
-            # fixme: capture 0 width and height
+
+            # return if start and endpoint are the same
+            if rect.width() + rect.height() == 0:
+                self.endPoint = self.toMapCoordinates(event.pos())
+                return
+
             if rect.width() > rect.height():
                 # make height (y) same as width in the correct direction
                 if self.startPoint.y() < end_point.y():
@@ -169,6 +169,7 @@ class GeometryTool(QgsMapTool):
                     end_point.setX(self.startPoint.x() + rect.height())
                 else:
                     end_point.setX(self.startPoint.x() - rect.height())
+
             self.endPoint = end_point
         else:
             self.endPoint = self.toMapCoordinates(event.pos())
@@ -177,11 +178,18 @@ class GeometryTool(QgsMapTool):
         pass
 
     def draw_shape(self):
+        # fixme: possible to not have an active layer when it is deselected in the process
+        # fail gracefully and report to user as QGis does.
         layer = self.canvas.currentLayer()
-        feature = QgsFeature()
+        feature = QgsFeature(layer.fields())
         feature.setGeometry(self.shape())
-        pr = layer.dataProvider()
-        pr.addFeatures([feature])
+
+        ff = iface.getFeatureForm(layer, feature)
+        if version_info[0] >= 3:
+            ff.setMode(QgsAttributeEditorContext.AddFeatureMode)
+        ff.accepted.connect(self.reset)
+        ff.rejected.connect(self.reset)
+        ff.show()
 
     def shape(self):
         pass
@@ -202,7 +210,7 @@ class GeometryTool(QgsMapTool):
         self.statusBar.showMessage("Hold SHIFT to lock the ratio for perfect squares and circles")
         super(GeometryTool, self).activate()
 
-    # todo: use for further cleanup?
+    # fixme: use for further cleanup?
     def deactivate(self):
         self.statusBar.clearMessage()
         super(GeometryTool, self).deactivate()
