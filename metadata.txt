@@ -7,11 +7,9 @@ version=0.7
 author=P. van de Geer
 email=pvandegeer@gmail.com
 
-about=This plugin draws basic geometry shapes with user defined measurements and also allows free drawing. Integrates in
-the digitizing toolbar. Options are rectangles, squares, ovals, and circles. Use shift to fix the aspect ratio and
-create perfect squares and circles.
-    Currently the dimensions are dictated by the default map units of the project CRS which can be degrees. This will
-change to QGIS measurement units in a forthcoming release.
+about=This plugin draws basic geometry shapes with user defined measurements and also allows free drawing. Integrates in the digitizing toolbar. Options are rectangles, squares, ovals, and circles. Use shift to fix the aspect ratio and create perfect squares and circles.
+
+    Currently the dimensions are dictated by the default map units of the project CRS which can be degrees. This will change to QGIS measurement units in a forthcoming release.
 
 tracker=https://github.com/pvandegeer/GeometryShapes/issues
 repository=https://github.com/pvandegeer/GeometryShapes
