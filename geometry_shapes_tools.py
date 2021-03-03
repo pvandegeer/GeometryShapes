@@ -26,7 +26,8 @@ from sys import version_info
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog
+from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog, QgsProject, QgsCoordinateTransform, \
+    QgsUnitTypes
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
 from qgis.utils import iface
 
@@ -101,12 +102,15 @@ class GeometryTool(QgsMapTool):
             self.reset()
             return
 
+        title = 'Set size ({})'.format(QgsUnitTypes.toString(self.canvas.mapUnits()))
+        self.dlg.setWindowTitle(title)
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
         self.dlg.show()
 
         result = self.dlg.exec_()
         if result:
+            # fixme: can be NULL
             # values are adjusted
             if self.startPoint.x() < self.endPoint.x():
                 self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
@@ -180,19 +184,40 @@ class GeometryTool(QgsMapTool):
     def draw_shape(self):
         # fixme: possible to not have an active layer when it is deselected in the process
         # fail gracefully and report to user as QGis does.
+        # info level: Object toevoegen: geen actieve vectorlaag.
         layer = self.canvas.currentLayer()
         feature = QgsFeature(layer.fields())
-        feature.setGeometry(self.shape())
+        feature.setGeometry(self.geometry(layer))
 
-        ff = iface.getFeatureForm(layer, feature)
-        if version_info[0] >= 3:
-            ff.setMode(QgsAttributeEditorContext.AddFeatureMode)
-        ff.accepted.connect(self.reset)
-        ff.rejected.connect(self.reset)
-        ff.show()
+        if layer.fields().count():
+            ff = iface.getFeatureForm(layer, feature)
+            if version_info[0] >= 3:
+                ff.setMode(QgsAttributeEditorContext.AddFeatureMode)
+            ff.accepted.connect(self.reset)
+            ff.rejected.connect(self.reset)
+            ff.show()
+        else:
+            layer.addFeature(feature)
+            self.reset()
 
     def shape(self):
         pass
+
+    def geometry(self, layer):
+        shape = self.shape()
+
+        if version_info[0] >= 3:
+            sourceCrs = QgsProject.instance().crs()
+            tr = QgsCoordinateTransform(sourceCrs, layer.crs(), QgsProject.instance())
+        else:
+            sourceCrs = self.canvas.mapSettings().destinationCrs() if hasattr(self.canvas,
+                                                                              "mapSettings") else self.canvas.mapRenderer().destinationCrs()
+            tr = QgsCoordinateTransform(sourceCrs, layer.crs())
+
+        if sourceCrs != layer.crs():
+            shape.transform(tr)
+
+        return shape
 
     def selection_rect(self):
         if self.startPoint is None or self.endPoint is None:
@@ -227,7 +252,7 @@ class OvalGeometryTool(GeometryTool):
             return
 
         layer = self.canvas.currentLayer()
-        geom = self.shape()
+        geom = self.geometry(layer)
 
         self.rubberBand.reset(_polygon)
         self.rubberBand.setToGeometry(geom, layer)
@@ -278,7 +303,7 @@ class RectangleGeometryTool(GeometryTool):
         layer = self.canvas.currentLayer()
 
         self.rubberBand.reset(_polygon)
-        self.rubberBand.setToGeometry(self.shape(), layer)
+        self.rubberBand.setToGeometry(self.geometry(layer), layer)
         self.rubberBand.show()
         self.helperBand.reset(_line)
 
