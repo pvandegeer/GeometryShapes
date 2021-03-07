@@ -76,7 +76,7 @@ class GeometryTool(QgsMapTool):
         self.helperBand = None
         self.canvas.refresh()
 
-    def startCapturing(self):
+    def start_capturing(self):
         # Fixme: use system settings
         self.rubberBand = QgsRubberBand(self.canvas, _polygon)
         self.rubberBand.setColor(QColor(255, 0, 0, 199))
@@ -93,7 +93,7 @@ class GeometryTool(QgsMapTool):
         self.setCursor(Qt.CrossCursor)
         self.capturing = True
 
-    def stopCapturing(self):
+    def stop_capturing(self):
         self.capturing = False
         rect = self.selection_rect()
 
@@ -102,6 +102,7 @@ class GeometryTool(QgsMapTool):
             self.reset()
             return
 
+        # fixme: use QGis project 'measurement units' in stead of project crs units
         title = 'Set size ({})'.format(QgsUnitTypes.toString(self.canvas.mapUnits()))
         self.dlg.setWindowTitle(title)
         self.dlg.width.setValue(rect.width())
@@ -122,26 +123,26 @@ class GeometryTool(QgsMapTool):
             else:
                 self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
 
-            self.draw_shape()
+            self.add_feature_to_layer()
         else:
             self.reset()
 
     def canvasReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             if not self.capturing:
-                self.startCapturing()
+                self.start_capturing()
                 self.startPoint = self.toMapCoordinates(event.pos())
                 self.endPoint = self.startPoint
             else:
                 self.capture_position(event)
-                self.stopCapturing()
+                self.stop_capturing()
         elif event.button() == Qt.RightButton:
             self.reset()
 
     def canvasMoveEvent(self, event):
         if self.capturing:
             self.capture_position(event)
-            self.show_shape()
+            self.show_rubberband()
 
             if self.canvas.underMouse():
                 rect = self.selection_rect()
@@ -151,6 +152,11 @@ class GeometryTool(QgsMapTool):
                                       self.canvas)
 
     def capture_position(self, event):
+        """
+        Record the position of the mouse pointer and adjust if keyboard modifier is pressed
+
+        :type event: qgis.gui.QgsMapMouseEvent
+        """
         # adjust dimension on the fly if Shift is pressed
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             end_point = QgsPointXY(self.toMapCoordinates(event.pos()))
@@ -178,16 +184,22 @@ class GeometryTool(QgsMapTool):
         else:
             self.endPoint = self.toMapCoordinates(event.pos())
 
-    def show_shape(self):
+    def show_rubberband(self):
+        """
+         Draw to 'rubber band' to the map canvas as a preview of the shape
+
+         *To be implemented by child class*
+         """
         pass
 
-    def draw_shape(self):
+    def add_feature_to_layer(self):
+        """Adds the just created shape to the active layer as a feature"""
         # fixme: possible to not have an active layer when it is deselected in the process
         # fail gracefully and report to user as QGis does.
         # info level: Object toevoegen: geen actieve vectorlaag.
         layer = self.canvas.currentLayer()
         feature = QgsFeature(layer.fields())
-        feature.setGeometry(self.geometry(layer))
+        feature.setGeometry(self.transformed_geometry(layer))
 
         if layer.fields().count():
             ff = iface.getFeatureForm(layer, feature)
@@ -200,26 +212,48 @@ class GeometryTool(QgsMapTool):
             layer.addFeature(feature)
             self.reset()
 
-    def shape(self):
+    def geometry(self):
+        """
+        Returns the actual shape as a QgsGeometry object in the project CRS
+
+        *To be implemented by child class*
+
+        :rtype: qgis.core.QgsGeometry
+        """
         pass
 
-    def geometry(self, layer):
-        shape = self.shape()
+    def transformed_geometry(self, layer):
+        """
+        Takes a layer and returns the geometry shape as a QgsGeometry object in the that layer's CRS
+
+        :param layer: target layer for transformation
+        :type layer: qgis.core.QgsMapLayer
+        :return: geometry in target layer CRS
+        :rtype: qgis.core.QgsGeometry
+        """
+        geometry = self.geometry()
 
         if version_info[0] >= 3:
-            sourceCrs = QgsProject.instance().crs()
-            tr = QgsCoordinateTransform(sourceCrs, layer.crs(), QgsProject.instance())
+            source_crs = QgsProject.instance().crs()
+            tr = QgsCoordinateTransform(source_crs, layer.crs(), QgsProject.instance())
         else:
-            sourceCrs = self.canvas.mapSettings().destinationCrs() if hasattr(self.canvas,
-                                                                              "mapSettings") else self.canvas.mapRenderer().destinationCrs()
-            tr = QgsCoordinateTransform(sourceCrs, layer.crs())
+            if hasattr(self.canvas, "mapSettings"):
+                source_crs = self.canvas.mapSettings().destinationCrs()
+            else:
+                source_crs = self.canvas.mapRenderer().destinationCrs()
+            tr = QgsCoordinateTransform(source_crs, layer.crs())
 
-        if sourceCrs != layer.crs():
-            shape.transform(tr)
+        if source_crs != layer.crs():
+            geometry.transform(tr)
 
-        return shape
+        return geometry
 
     def selection_rect(self):
+        """
+        Returns the area between start and endpoint as a QgsRectangle
+
+        :rtype: qgis.core.QgsRectangle
+        """
         if self.startPoint is None or self.endPoint is None:
             return None
         elif self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
@@ -242,17 +276,17 @@ class GeometryTool(QgsMapTool):
 
 
 class OvalGeometryTool(GeometryTool):
-    def stopCapturing(self):
+    def stop_capturing(self):
         self.dlg.label.setText("Radius (x)")
         self.dlg.label_2.setText("Radius (y)")
-        super(OvalGeometryTool, self).stopCapturing()
+        super(OvalGeometryTool, self).stop_capturing()
 
-    def show_shape(self):
+    def show_rubberband(self):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
         layer = self.canvas.currentLayer()
-        geom = self.geometry(layer)
+        geom = self.transformed_geometry(layer)
 
         self.rubberBand.reset(_polygon)
         self.rubberBand.setToGeometry(geom, layer)
@@ -268,7 +302,7 @@ class OvalGeometryTool(GeometryTool):
         self.helperBand.addGeometry(line, layer)
         self.helperBand.show()
 
-    def shape(self):
+    def geometry(self):
         seg = 50
         coords = []
         r_x = self.selection_rect().width()
@@ -296,14 +330,14 @@ class OvalGeometryTool(GeometryTool):
 
 
 class RectangleGeometryTool(GeometryTool):
-    def show_shape(self):
+    def show_rubberband(self):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
         layer = self.canvas.currentLayer()
 
         self.rubberBand.reset(_polygon)
-        self.rubberBand.setToGeometry(self.geometry(layer), layer)
+        self.rubberBand.setToGeometry(self.transformed_geometry(layer), layer)
         self.rubberBand.show()
         self.helperBand.reset(_line)
 
@@ -315,7 +349,7 @@ class RectangleGeometryTool(GeometryTool):
         self.helperBand.setToGeometry(line, layer)
         self.helperBand.show()
 
-    def shape(self):
+    def geometry(self):
         return QgsGeometry.fromRect(self.selection_rect())
 
     def tooltip_text(self, rect):
