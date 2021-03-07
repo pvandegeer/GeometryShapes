@@ -24,7 +24,7 @@
 import math
 from sys import version_info
 
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog, QgsProject, QgsCoordinateTransform, \
     QgsUnitTypes
@@ -77,18 +77,28 @@ class GeometryTool(QgsMapTool):
         self.canvas.refresh()
 
     def start_capturing(self):
-        # Fixme: use system settings
-        self.rubberBand = QgsRubberBand(self.canvas, _polygon)
-        self.rubberBand.setColor(QColor(255, 0, 0, 199))
-        self.rubberBand.setFillColor(QColor(255, 0, 0, 31))
-        self.rubberBand.setWidth(1)
-        self.rubberBand.setLineStyle(Qt.DotLine)
+        """Capturing has started: setup the tool by initializing the rubber band and capturing mode"""
+        # apply application settings for the rubber band
+        settings = QSettings()
+        settings.beginGroup('qgis/digitizing')
+        line_width = settings.value('line_width', 1, type=int)
+        fill_color = QColor(settings.value('fill_color_red', 255, type=int),
+                            settings.value('fill_color_green', 0, type=int),
+                            settings.value('fill_color_blue', 0, type=int),
+                            settings.value('fill_color_alpha', 31, type=int))
+        line_color = QColor(settings.value('line_color_red', 255, type=int),
+                            settings.value('line_color_green', 0, type=int),
+                            settings.value('line_color_blue', 0, type=int),
+                            settings.value('line_color_alpha', 199, type=int))
 
+        self.rubberBand = QgsRubberBand(self.canvas, _polygon)
+        self.rubberBand.setColor(line_color)
+        self.rubberBand.setFillColor(fill_color)
+        self.rubberBand.setWidth(line_width)
         self.helperBand = QgsRubberBand(self.canvas, _polygon)
         self.helperBand.setColor(Qt.gray)
         self.helperBand.setFillColor(QColor(0, 0, 0, 0))
-        self.helperBand.setWidth(1)
-        self.helperBand.setLineStyle(Qt.DotLine)
+        self.helperBand.setWidth(line_width)
 
         self.setCursor(Qt.CrossCursor)
         self.capturing = True
