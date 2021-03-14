@@ -26,8 +26,8 @@ from sys import version_info
 
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog, QgsProject, QgsCoordinateTransform, \
-    QgsUnitTypes
+from qgis.core import QgsMapLayer, QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog, QgsProject, \
+    QgsCoordinateTransform, QgsUnitTypes
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
 from qgis.utils import iface
 
@@ -139,7 +139,13 @@ class GeometryTool(QgsMapTool):
 
     def canvasReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if not self.capturing:
+            # there must be an active polygon layer
+            layer = self.canvas.currentLayer()
+            if not layer or layer.type() != QgsMapLayer.VectorLayer or layer.geometryType() != _polygon:
+                iface.messageBar().pushInfo("Add feature", "No active polygon layer")
+                return
+                
+            if not self.capturing:           
                 self.start_capturing()
                 self.startPoint = self.toMapCoordinates(event.pos())
                 self.endPoint = self.startPoint
@@ -148,7 +154,11 @@ class GeometryTool(QgsMapTool):
                 self.stop_capturing()
         elif event.button() == Qt.RightButton:
             self.reset()
-
+    
+    def keyPressEvent(self, event): 
+        if event.key() == Qt.Key_Escape:
+            self.reset()
+    
     def canvasMoveEvent(self, event):
         if self.capturing:
             self.capture_position(event)
@@ -204,9 +214,7 @@ class GeometryTool(QgsMapTool):
 
     def add_feature_to_layer(self):
         """Adds the just created shape to the active layer as a feature"""
-        # fixme: possible to not have an active layer when it is deselected in the process
-        # fail gracefully and report to user as QGis does.
-        # info level: Object toevoegen: geen actieve vectorlaag.
+
         layer = self.canvas.currentLayer()
         feature = QgsFeature(layer.fields())
         feature.setGeometry(self.transformed_geometry(layer))
@@ -260,7 +268,7 @@ class GeometryTool(QgsMapTool):
 
     def selection_rect(self):
         """
-        Returns the area between start and endpoint as a QgsRectangle
+        Returns the area between start and endpoint as a QgsRectangle in MapCoordinates
 
         :rtype: qgis.core.QgsRectangle
         """
@@ -282,6 +290,7 @@ class GeometryTool(QgsMapTool):
     # fixme: use for further cleanup?
     def deactivate(self):
         self.statusBar.clearMessage()
+        self.reset()
         super(GeometryTool, self).deactivate()
 
 
@@ -295,11 +304,9 @@ class OvalGeometryTool(GeometryTool):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
-        layer = self.canvas.currentLayer()
-        geom = self.transformed_geometry(layer)
-
+        geom = self.geometry()
         self.rubberBand.reset(_polygon)
-        self.rubberBand.setToGeometry(geom, layer)
+        self.rubberBand.setToGeometry(geom, None)
         self.rubberBand.show()
 
         self.helperBand.reset(_polygon)
@@ -308,8 +315,8 @@ class OvalGeometryTool(GeometryTool):
             line = QgsGeometry.fromPolylineXY([self.startPoint, self.endPoint])
         else:
             line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
-        self.helperBand.setToGeometry(box, layer)
-        self.helperBand.addGeometry(line, layer)
+        self.helperBand.setToGeometry(box, None)
+        self.helperBand.addGeometry(line, None)
         self.helperBand.show()
 
     def geometry(self):
@@ -344,10 +351,8 @@ class RectangleGeometryTool(GeometryTool):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
-        layer = self.canvas.currentLayer()
-
         self.rubberBand.reset(_polygon)
-        self.rubberBand.setToGeometry(self.transformed_geometry(layer), layer)
+        self.rubberBand.setToGeometry(self.geometry(), None)
         self.rubberBand.show()
         self.helperBand.reset(_line)
 
@@ -356,7 +361,7 @@ class RectangleGeometryTool(GeometryTool):
         else:
             line = QgsGeometry.fromPolyline([self.startPoint, self.endPoint])
 
-        self.helperBand.setToGeometry(line, layer)
+        self.helperBand.setToGeometry(line, None)
         self.helperBand.show()
 
     def geometry(self):
