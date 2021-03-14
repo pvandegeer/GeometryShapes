@@ -28,21 +28,24 @@ from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsMapLayer, QgsRectangle, QgsGeometry, QgsFeature, \
     QgsUnitTypes, QgsApplication, QgsProject, QgsCoordinateTransform
-from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, \
+    QgsMessageBar
 from qgis.utils import iface
 
 if version_info[0] >= 3:
     from qgis.PyQt.QtWidgets import QApplication, QToolTip
-    from qgis.core import QgsWkbTypes, QgsPointXY
+    from qgis.core import QgsWkbTypes, QgsPointXY, Qgis as QGis
     from .geometry_shapes_dialog import GeometryShapesDialog
 
+    _warning = QGis.Warning
     _polygon = QgsWkbTypes.PolygonGeometry
     _line = QgsWkbTypes.LineGeometry
 else:
     from qgis.PyQt.QtGui import QApplication, QToolTip
     from qgis.core import QGis, QgsPoint as QgsPointXY
     from geometry_shapes_dialog import GeometryShapesDialog
-
+    
+    _warning = QgsMessageBar.WARNING
     _polygon = QGis.Polygon
     _line = QGis.Line
 
@@ -106,6 +109,10 @@ class GeometryTool(QgsMapTool):
         self.capturing = True
 
     def stop_capturing(self):
+        """
+        Capturing will stop: adjust dimensions if needed and add feature to
+        to the active layer.
+        """
         self.capturing = False
         rect = self.selection_rect()
 
@@ -120,11 +127,18 @@ class GeometryTool(QgsMapTool):
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
         self.dlg.show()
-
         result = self.dlg.exec_()
+
         if result:
-            # fixme: can be NULL
-            # values are adjusted
+            # check for a valid result from the dialog
+            if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
+                iface.messageBar().pushMessage("Add feature", 
+                    "Invalid dimensions (must be numeric and greater than zero)",
+                    level=_warning, duration=5)
+                self.reset()
+                return
+            
+            # adjust start and end points based on dimensions
             if self.startPoint.x() < self.endPoint.x():
                 self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
             else:
