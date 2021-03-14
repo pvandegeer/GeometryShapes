@@ -26,8 +26,8 @@ from sys import version_info
 
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsMapLayer, QgsRectangle, QgsGeometry, QgsFeature, QgsMessageLog, QgsProject, \
-    QgsCoordinateTransform, QgsUnitTypes
+from qgis.core import QgsMapLayer, QgsRectangle, QgsGeometry, QgsFeature, \
+    QgsUnitTypes, QgsApplication, QgsProject, QgsCoordinateTransform
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
 from qgis.utils import iface
 
@@ -49,6 +49,7 @@ else:
 
 class GeometryTool(QgsMapTool):
     def __init__(self, canvas):
+        QgsMapTool.__init__(self, canvas)
         self.dlg = GeometryShapesDialog()
         self.capturing = False
         self.startPoint = None
@@ -56,7 +57,9 @@ class GeometryTool(QgsMapTool):
         self.rubberBand = None
         self.helperBand = None
         self.canvas = canvas
-        QgsMapTool.__init__(self, self.canvas)
+        
+        cursor = QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint)
+        self.setCursor(cursor)
 
     def flags(self):
         return QgsMapTool.EditTool
@@ -100,7 +103,6 @@ class GeometryTool(QgsMapTool):
         self.helperBand.setFillColor(QColor(0, 0, 0, 0))
         self.helperBand.setWidth(line_width)
 
-        self.setCursor(Qt.CrossCursor)
         self.capturing = True
 
     def stop_capturing(self):
@@ -373,3 +375,4 @@ class RectangleGeometryTool(GeometryTool):
         else:
             text = "Size x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
         return text
+
