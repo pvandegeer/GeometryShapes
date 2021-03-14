@@ -7,7 +7,7 @@
                               -------------------
         begin                : 2020-07-29
         git sha              : $Format:%H$
-        copyright            : (C) 2020 by P. van de Geer
+        copyright            : (C) 2021 by P. van de Geer
         email                : pvandegeer@gmail.com
  ***************************************************************************/
 
@@ -23,7 +23,7 @@
 import os.path
 from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.core import QgsApplication, QgsMapLayer, QgsMessageLog
+from qgis.core import QgsMapLayer
 
 from sys import version_info
 
@@ -164,8 +164,6 @@ class GeometryShapes:
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
-        # action.setIcon(QgsApplication.getThemeIcon("/mActionCapturePolygon.svg"))
-        #  mActionAddFeature->setIcon( QgsApplication::getThemeIcon( QStringLiteral( "/mActionCapturePolygon.svg" ) ) );
 
         if status_tip is not None:
             action.setStatusTip(status_tip)
@@ -194,7 +192,6 @@ class GeometryShapes:
         self.add_action(
             icon_path,
             text=self.tr(u'Draw rectangle geometry'),
-            # callback=self.draw_rectangle,
             callback=lambda checked: self.set_tool(checked, 0),
             enabled_flag=False,
             add_to_toolbar=False,
@@ -204,7 +201,6 @@ class GeometryShapes:
         self.add_action(
             icon_path,
             text=self.tr(u'Draw oval geometry'),
-            # callback=self.draw_oval,
             callback=lambda checked: self.set_tool(checked, 1),
             enabled_flag=False,
             add_to_toolbar=False,
@@ -217,12 +213,11 @@ class GeometryShapes:
         self.toolButton.setDefaultAction(self.actions[0])
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolButtonAction = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
+        
+        # Init button state
+        self.toggle()
 
-    # def run(self):
-    #     """Run method that performs all the real work"""
-    #     pass
-
-    # fixme: change cursor
+    # fixme: set cursor
     def set_tool(self, checked, action):
         if not checked:
             self.canvas.unsetMapTool(self.tool)
@@ -241,15 +236,18 @@ class GeometryShapes:
     # Some code here lifted from: https://gitlab.com/lbartoletti/CADDigitize/blob/master/CADDigitize.py
     # and copyright 2016 by Loïc BARTOLETTI
     def toggle(self):
+        #fixme: check elsewhere
         try:
             _polygon = QgsWkbTypes.PolygonGeometry  # QGis3
         except:
             _polygon = QGis.Polygon  # QGis2
 
-        # QgsMessageLog.logMessage("Toggle")
         layer = self.canvas.currentLayer()
         # Decide whether the plugin button/menu is enabled or disabled
-        if layer is not None:
+        if layer is None:
+            self.actions[0].setEnabled(False)
+            self.actions[1].setEnabled(False)
+        else:
             try:
                 # disconnect, will be reconnected
                 layer.editingStarted.disconnect(self.toggle)
@@ -261,39 +259,41 @@ class GeometryShapes:
             except:
                 pass
 
-            if layer.type() == QgsMapLayer.VectorLayer:
+            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == _polygon:
                 layer.editingStarted.connect(self.toggle)
                 layer.editingStopped.connect(self.toggle)
 
-            if (layer.isEditable() and layer.geometryType() == _polygon):
+            if layer.isEditable() and layer.geometryType() == _polygon:
                 self.actions[0].setEnabled(True)
                 self.actions[1].setEnabled(True)
             else:
                 self.actions[0].setEnabled(False)
                 self.actions[1].setEnabled(False)
-                self.set_tool(False, -1)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        # QgsMessageLog.logMessage("Unloading")
         for action in self.actions:
-            self.iface.removePluginVectorMenu(
-                self.tr(u'&Geometry Shapes'),
-                action)
-            # fixme: remove individual actions?
-            # fixme: remove signals?
-            layer = self.canvas.currentLayer()
+            self.iface.removePluginVectorMenu(self.tr(u'&Geometry Shapes'), action)
+            try:
+                action.triggered.disconnect()
+            except (TypeError, AttributeError):
+                pass
+
+        self.popupMenu.clear()
+        self.toolbar.removeAction(self.toolButtonAction)
+
+        layer = self.canvas.currentLayer()
+        if layer:
             try:
                 layer.editingStarted.disconnect(self.toggle)
-            except:
+            except (TypeError, AttributeError):
                 pass
             try:
                 layer.editingStopped.disconnect(self.toggle)
-            except:
+            except (TypeError, AttributeError):
                 pass
             try:
                 self.iface.currentLayerChanged["QgsMapLayer*"].disconnect(self.toggle)
-            except:
+            except (TypeError, AttributeError):
                 pass
 
-            self.toolbar.removeAction(self.toolButtonAction)
