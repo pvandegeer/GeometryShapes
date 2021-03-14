@@ -183,7 +183,6 @@ class GeometryShapes:
                 action)
 
         self.actions.append(action)
-
         return action
 
     def initGui(self):
@@ -217,7 +216,6 @@ class GeometryShapes:
         # Init button state
         self.toggle()
 
-    # fixme: set cursor
     def set_tool(self, checked, action):
         if not checked:
             self.canvas.unsetMapTool(self.tool)
@@ -236,11 +234,10 @@ class GeometryShapes:
     # Some code here lifted from: https://gitlab.com/lbartoletti/CADDigitize/blob/master/CADDigitize.py
     # and copyright 2016 by Loïc BARTOLETTI
     def toggle(self):
-        #fixme: check elsewhere
-        try:
-            _polygon = QgsWkbTypes.PolygonGeometry  # QGis3
-        except:
-            _polygon = QGis.Polygon  # QGis2
+        if version_info[0] >= 3:
+            _polygon = QgsWkbTypes.PolygonGeometry
+        else:
+            _polygon = QGis.Polygon
 
         layer = self.canvas.currentLayer()
         # Decide whether the plugin button/menu is enabled or disabled
@@ -296,4 +293,3 @@ class GeometryShapes:
                 self.iface.currentLayerChanged["QgsMapLayer*"].disconnect(self.toggle)
             except (TypeError, AttributeError):
                 pass
-
