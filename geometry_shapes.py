@@ -212,7 +212,10 @@ class GeometryShapes:
         self.toolButton.setDefaultAction(self.actions[0])
         self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
         self.toolButtonAction = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
-        
+
+        self.rectangleTool = RectangleGeometryTool(self.canvas)
+        self.ovalTool = OvalGeometryTool(self.canvas)
+
         # Init button state
         self.toggle()
 
@@ -223,9 +226,9 @@ class GeometryShapes:
             return
 
         if action == 0:
-            self.tool = RectangleGeometryTool(self.canvas)
+            self.tool = self.rectangleTool
         else:
-            self.tool = OvalGeometryTool(self.canvas)
+            self.tool = self.ovalTool
 
         self.toolButton.setDefaultAction(self.actions[action])
         self.tool.setAction(self.actions[action])

@@ -44,7 +44,7 @@ else:
     from qgis.PyQt.QtGui import QApplication, QToolTip
     from qgis.core import QGis, QgsPoint as QgsPointXY
     from geometry_shapes_dialog import GeometryShapesDialog
-    
+
     _warning = QgsMessageBar.WARNING
     _polygon = QGis.Polygon
     _line = QGis.Line
@@ -60,7 +60,7 @@ class GeometryTool(QgsMapTool):
         self.rubberBand = None
         self.helperBand = None
         self.canvas = canvas
-        
+
         cursor = QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint)
         self.setCursor(cursor)
 
@@ -126,18 +126,23 @@ class GeometryTool(QgsMapTool):
         self.dlg.setWindowTitle(title)
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
+
+        enable_segments = self.__class__.__name__ == 'OvalGeometryTool'
+        self.dlg.label_segments.setEnabled(enable_segments)
+        self.dlg.segments.setEnabled(enable_segments)
+
         self.dlg.show()
         result = self.dlg.exec_()
 
         if result:
             # check for a valid result from the dialog
             if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
-                iface.messageBar().pushMessage("Add feature", 
+                iface.messageBar().pushMessage("Add feature",
                     "Invalid dimensions (must be numeric and greater than zero)",
                     level=_warning, duration=5)
                 self.reset()
                 return
-            
+
             # adjust start and end points based on dimensions
             if self.startPoint.x() < self.endPoint.x():
                 self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
@@ -160,8 +165,8 @@ class GeometryTool(QgsMapTool):
             if not layer or layer.type() != QgsMapLayer.VectorLayer or layer.geometryType() != _polygon:
                 iface.messageBar().pushInfo("Add feature", "No active polygon layer")
                 return
-                
-            if not self.capturing:           
+
+            if not self.capturing:
                 self.start_capturing()
                 self.startPoint = self.toMapCoordinates(event.pos())
                 self.endPoint = self.startPoint
@@ -170,11 +175,11 @@ class GeometryTool(QgsMapTool):
                 self.stop_capturing()
         elif event.button() == Qt.RightButton:
             self.reset()
-    
-    def keyPressEvent(self, event): 
+
+    def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             self.reset()
-    
+
     def canvasMoveEvent(self, event):
         if self.capturing:
             self.capture_position(event)
@@ -246,7 +251,7 @@ class GeometryTool(QgsMapTool):
             layer.addFeature(feature)
             self.reset()
 
-    def geometry(self):
+    def geometry(self, **kwargs):
         """
         Returns the actual shape as a QgsGeometry object in the project CRS
 
@@ -265,7 +270,8 @@ class GeometryTool(QgsMapTool):
         :return: geometry in target layer CRS
         :rtype: qgis.core.QgsGeometry
         """
-        geometry = self.geometry()
+        segments = self.dlg.segments.value()
+        geometry = self.geometry(seg=segments)
 
         if version_info[0] >= 3:
             source_crs = QgsProject.instance().crs()
@@ -335,8 +341,7 @@ class OvalGeometryTool(GeometryTool):
         self.helperBand.addGeometry(line, None)
         self.helperBand.show()
 
-    def geometry(self):
-        seg = 50
+    def geometry(self, seg=50):
         coords = []
         r_x = self.selection_rect().width()
         r_y = self.selection_rect().height()
@@ -380,7 +385,7 @@ class RectangleGeometryTool(GeometryTool):
         self.helperBand.setToGeometry(line, None)
         self.helperBand.show()
 
-    def geometry(self):
+    def geometry(self, **kwargs):
         return QgsGeometry.fromRect(self.selection_rect())
 
     def tooltip_text(self, rect):
@@ -389,4 +394,3 @@ class RectangleGeometryTool(GeometryTool):
         else:
             text = "Size x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
         return text
-
