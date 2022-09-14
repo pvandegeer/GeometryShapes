@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>264</width>
-    <height>130</height>
+    <height>182</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="label_rotation">
        <property name="enabled">
         <bool>false</bool>
        </property>
@@ -70,8 +70,8 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-	   <property name="decimals">
-           <number>3</number>
+       <property name="decimals">
+        <number>3</number>
        </property>
        <property name="maximum">
         <double>1000000.000000000000000</double>
@@ -86,11 +86,43 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-	   <property name="decimals">
-           <number>3</number>
+       <property name="decimals">
+        <number>3</number>
        </property>
        <property name="maximum">
         <double>1000000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_segments">
+       <property name="text">
+        <string>Segments</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QSpinBox" name="segments">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="suffix">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>4</number>
+       </property>
+       <property name="maximum">
+        <number>360</number>
+       </property>
+       <property name="value">
+        <number>50</number>
        </property>
       </widget>
      </item>
