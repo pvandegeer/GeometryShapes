@@ -28,7 +28,7 @@ from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication, QToolTip
 from qgis.core import Qgis as QGis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
     QgsGeometry, QgsMapLayer, QgsPointXY, QgsProject, QgsRectangle, QgsUnitTypes, QgsWkbTypes
-from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, QgsMessageBar
 from qgis.utils import iface
 
 from .geometry_shapes_dialog import GeometryShapesDialog
