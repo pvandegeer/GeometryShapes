@@ -15,8 +15,9 @@ tracker=https://github.com/pvandegeer/GeometryShapes/issues
 repository=https://github.com/pvandegeer/GeometryShapes
 
 changelog=
-    0.8 Configurable # of segments for circles (PR6)
-        Hopefully fix locale setting error on fresh QGis install (#13)
+    0.8 Configurable # of segments for circles (pull request 6)
+        Hopefully fix locale setting error on fresh QGis install (fix bug #13)
+        Set default values for attributes (fix bug #10)
     0.7 Handle layer CRS that is different from the project CRS. Also don't prompt for non existing attributes.
     0.6 Add Undo and make behave like the default polygon tool (fix issue 1 and a minor bug)
     0.5 Make QGis3 compatible

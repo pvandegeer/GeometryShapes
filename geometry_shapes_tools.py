@@ -27,7 +27,7 @@ from sys import version_info
 from qgis.PyQt.QtCore import Qt, QSettings
 from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsMapLayer, QgsRectangle, QgsGeometry, QgsFeature, \
-    QgsUnitTypes, QgsApplication, QgsProject, QgsCoordinateTransform
+    QgsUnitTypes, QgsApplication, QgsProject, QgsCoordinateTransform, QgsExpression
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, \
     QgsMessageBar
 from qgis.utils import iface
@@ -240,7 +240,16 @@ class GeometryTool(QgsMapTool):
         feature = QgsFeature(layer.fields())
         feature.setGeometry(self.transformed_geometry(layer))
 
+        # If the layer has attributes, set default attribute values and open the feature form for editing
         if layer.fields().count():
+            for idx, field in enumerate(layer.fields()):
+                default_value = field.defaultValueDefinition().expression() if field.defaultValueDefinition().isValid() else None
+                if default_value:
+                    # Evaluate the default value expression in the context of the layer
+                    context = layer.createExpressionContext()
+                    value = QgsExpression(default_value).evaluate(context)
+                    feature.setAttribute(idx, value)
+            
             ff = iface.getFeatureForm(layer, feature)
             if version_info[0] >= 3:
                 ff.setMode(QgsAttributeEditorContext.AddFeatureMode)
