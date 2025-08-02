@@ -28,7 +28,7 @@ from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication, QToolTip
 from qgis.core import Qgis as QGis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
     QgsGeometry, QgsMapLayer, QgsPointXY, QgsProject, QgsRectangle, QgsUnitTypes, QgsWkbTypes
-from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, QgsMessageBar
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext
 from qgis.utils import iface
 
 from .geometry_shapes_dialog import GeometryShapesDialog
@@ -98,9 +98,15 @@ class GeometryTool(QgsMapTool):
         to the active layer.
         """
         self.capturing = False
+  
+        # cache start- and endpoints as in case the tool disappears
+        # before the dialog is closed, so we can still access them
+        startpoint = QgsPointXY(self.startPoint.x(), self.startPoint.y())
+        endpoint = QgsPointXY(self.endPoint.x(), self.endPoint.y())
+
         rect = self.selection_rect()
 
-        # fixme: need to find out why this sometimes happens
+        # fixme: need to find out why this sometimes happens (when tool deactivated while dialog is open?)
         if not rect:
             self.reset()
             return
@@ -118,8 +124,6 @@ class GeometryTool(QgsMapTool):
         self.dlg.show()
         result = self.dlg.exec_()
 
-        #fixme: tool might have been deactivated while dialog was open: self.startPoint and self.endPoint might be None
-        
         if result:
             # check for a valid result from the dialog
             if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
@@ -129,7 +133,9 @@ class GeometryTool(QgsMapTool):
                 self.reset()
                 return
 
-            # adjust start and end points based on dimensions
+            # retrieve cached start- and endpoint and adjust based on entered dimensions
+            self.startPoint = startpoint
+            self.endPoint = endpoint
             if self.startPoint.x() < self.endPoint.x():
                 self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
             else:
