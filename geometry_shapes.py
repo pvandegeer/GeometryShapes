@@ -53,7 +53,7 @@ class GeometryShapes:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'GeometryShapes_{}.qm'.format(locale))
+            'geometry_shapes_{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()

@@ -118,7 +118,7 @@ class GeometryTool(QgsMapTool):
 
         # fixme: use QGis project 'measurement units' in stead of project crs units (Qgis.DistanceUnits)
         # fixme: set number of decimals for width and height based on zoom level 
-        title = 'Set size ({})'.format(QgsUnitTypes.toString(self.canvas.mapUnits()))
+        title = '{} ({})'.format(self.tr(u"Set size"), QgsUnitTypes.toString(self.canvas.mapUnits()))
         self.dlg.setWindowTitle(title)
         self.dlg.width.setValue(rect.width())
         self.dlg.height.setValue(rect.height())
@@ -377,6 +377,7 @@ class RectangleGeometryTool(GeometryTool):
     def geometry(self, **kwargs):
         return QgsGeometry.fromRect(self.selection_rect())
 
+    # fixme: tooltip translation and variables not working
     def tooltip_text(self, rect):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             text = "{}: {}".format(self.tr(u"Size"), round(rect.width(), 2))
