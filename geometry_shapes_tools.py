@@ -111,7 +111,8 @@ class GeometryTool(QgsMapTool):
             self.reset()
             return
 
-        # fixme: use QGis project 'measurement units' in stead of project crs units
+        # fixme: use QGis project 'measurement units' in stead of project crs units (Qgis.DistanceUnits)
+        # fixme: set number of decimals for width and height based on zoom level 
         title = 'Set size ({})'.format(QgsUnitTypes.toString(self.canvas.mapUnits()))
         self.dlg.setWindowTitle(title)
         self.dlg.width.setValue(rect.width())
