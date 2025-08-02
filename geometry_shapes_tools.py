@@ -7,7 +7,7 @@
                               -------------------
         begin                : 2020-07-29
         git sha              : $Format:%H$
-        copyright            : (C) 2021 by P. van de Geer
+        copyright            : (C) 2021-2025 by P. van de Geer
                                (C) 2019 PyQGis Developer Cookbook
         email                : pvandegeer@gmail.com
  ***************************************************************************/
