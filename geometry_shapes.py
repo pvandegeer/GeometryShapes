@@ -263,7 +263,7 @@ class GeometryShapes:
                 layer.editingStarted.connect(self.toggle)
                 layer.editingStopped.connect(self.toggle)
 
-            if layer.isEditable() and layer.geometryType() == _polygon:
+            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == _polygon and layer.isEditable() and layer.isValid():
                 self.actions[0].setEnabled(True)
                 self.actions[1].setEnabled(True)
             else:
