@@ -23,7 +23,7 @@
 """
 import math
 
-from qgis.PyQt.QtCore import Qt, QSettings
+from qgis.PyQt.QtCore import Qt, QSettings, QCoreApplication
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication, QToolTip
 from qgis.core import Qgis as QGis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
@@ -47,6 +47,11 @@ class GeometryTool(QgsMapTool):
 
         cursor = QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint)
         self.setCursor(cursor)
+    
+    # noinspection PyMethodMayBeStatic
+    def tr(self, message):
+        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
+        return QCoreApplication.translate('GeometryShapes', message)
 
     def flags(self):
         return QgsMapTool.EditTool
@@ -128,8 +133,8 @@ class GeometryTool(QgsMapTool):
         if result:
             # check for a valid result from the dialog
             if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
-                iface.messageBar().pushMessage("Add feature",
-                    "Invalid dimensions (must be numeric and greater than zero)",
+                iface.messageBar().pushMessage(self.tr(u"Add feature"),
+                    self.tr(u"Invalid dimensions (must be numeric and greater than zero)"),
                     level=QGis.Warning, duration=5)
                 self.reset()
                 return
@@ -156,7 +161,7 @@ class GeometryTool(QgsMapTool):
             # there must be an active polygon layer
             layer = self.canvas.currentLayer()
             if not layer or layer.type() != QgsMapLayer.VectorLayer or layer.geometryType() != QgsWkbTypes.PolygonGeometry:
-                iface.messageBar().pushInfo("Add feature", "No active polygon layer")
+                iface.messageBar().pushInfo(self.tr(u"Add feature"), self.tr(u"No active polygon layer"))
                 return
 
             if not self.capturing:
@@ -300,7 +305,7 @@ class GeometryTool(QgsMapTool):
 
     def activate(self):
         self.statusBar = iface.mainWindow().statusBar()
-        self.statusBar.showMessage("Hold SHIFT to lock the ratio for perfect squares and circles")
+        self.statusBar.showMessage(self.tr(u"Hold SHIFT to lock the ratio for perfect squares and circles"))
         super(GeometryTool, self).activate()
 
     # fixme: use for further cleanup?
@@ -312,8 +317,8 @@ class GeometryTool(QgsMapTool):
 
 class OvalGeometryTool(GeometryTool):
     def stop_capturing(self):
-        self.dlg.label.setText("Radius (x)")
-        self.dlg.label_2.setText("Radius (y)")
+        self.dlg.label.setText(self.tr(u"Radius (x)"))
+        self.dlg.label_2.setText(self.tr(u"Radius (y)"))
         super(OvalGeometryTool, self).stop_capturing()
 
     def show_rubberband(self):
@@ -349,9 +354,9 @@ class OvalGeometryTool(GeometryTool):
 
     def tooltip_text(self, rect):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-            text = "Radius: " + str(round(rect.width(), 2))
+            text = "{}: {}".format(self.tr(u"Radius"), round(rect.width(), 2))
         else:
-            text = "Radius x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
+            text = "{}: {} / {}".format(self.tr(u"Radius x/y"), round(rect.width(), 2), round(rect.height(), 2))
         return text
 
 
@@ -374,7 +379,7 @@ class RectangleGeometryTool(GeometryTool):
 
     def tooltip_text(self, rect):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-            text = "Size: " + str(round(rect.width(), 2))
+            text = "{}: {}".format(self.tr(u"Size"), round(rect.width(), 2))
         else:
-            text = "Size x/y: " + str(round(rect.width(), 2)) + " / " + str(round(rect.height(), 2))
+            text = "{}: {} / {}".format(self.tr(u"Size x/y"), round(rect.width(), 2), round(rect.height(), 2))
         return text
