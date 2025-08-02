@@ -1,6 +1,6 @@
 [general]
 name=Geometry Shapes
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 qgisMaximumVersion=3.99
 description=This plugin draws basic geometry shapes (primitives) with user defined measurements
 version=0.8
@@ -16,8 +16,11 @@ repository=https://github.com/pvandegeer/GeometryShapes
 
 changelog=
     0.8 Configurable # of segments for circles (pull request 6)
-        Hopefully fix locale setting error on fresh QGis install (fix bug #13)
-        Set default values for attributes (fix bug #10)
+        Drop suport for QGis 2
+        Bug fixes:
+        * Hopefully fix locale setting error on fresh QGis install (fix bug #13)
+        * Set default values for attributes (fix bug #10)
+        * Check for vector layer type (fix bug #7) 
     0.7 Handle layer CRS that is different from the project CRS. Also don't prompt for non existing attributes.
     0.6 Add Undo and make behave like the default polygon tool (fix issue 1 and a minor bug)
     0.5 Make QGis3 compatible

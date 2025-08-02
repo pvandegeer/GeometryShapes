@@ -23,12 +23,8 @@
 
 import os
 from qgis.PyQt import uic
+from qgis.PyQt.QtWidgets import QDialog
 
-from sys import version_info
-if version_info[0] >= 3:
-    from qgis.PyQt.QtWidgets import QDialog
-else:
-        from qgis.PyQt.QtGui import QDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geometry_shapes_dialog_base.ui'))
