@@ -11,6 +11,13 @@ _Currently the dimensions are dictated by the default map units of the project C
 change to QGIS measurement units in a forthcoming release._   
 
 ## Changelog
+* 1.0 Configurable # of segments for circles (pull request 6)
+    Drop suport for QGis 2
+    Bug fixes:
+    - Hopefully fix locale setting error on fresh QGis install (fix bug #13)
+    - Set default values for attributes (fix bug #10)
+    - Check for vector layer type (fix bug #7) 
+    - Allow for smaller geometries >0.00001 (fic bug #11)
 * 0.7 Handle layer CRS that is different from the project CRS. Also don't prompt for non existing attributes.
 * 0.6 Add Undo and make behave like the default polygon tool (fix issue 1 and a minor bug)
 * 0.5 Make QGis3 compatible
