@@ -77,7 +77,7 @@
     <message>
         <location filename="../geometry_shapes_tools.py" line="121"/>
         <source>Set size</source>
-        <translation type="unfinished">Afmetingen instellen</translation>
+        <translation>Afmetingen instellen</translation>
     </message>
 </context>
 <context>
