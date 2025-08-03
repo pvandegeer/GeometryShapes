@@ -24,7 +24,7 @@
     <message>
         <location filename="../geometry_shapes_dialog_base.ui" line="14"/>
         <source>Set size</source>
-        <translation>Afmetingen instellen</translation>
+        <translation>Afmetingen</translation>
     </message>
     <message>
         <location filename="../geometry_shapes_dialog_base.ui" line="22"/>
@@ -55,50 +55,55 @@
 <context>
     <name>GeometryTool</name>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="164"/>
+        <location filename="../geometry_shapes_tools.py" line="124"/>
+        <source>Set size</source>
+        <comment>GeometryTool</comment>
+        <translation>Afmetingen</translation>
+    </message>
+    <message>
+        <location filename="../geometry_shapes_tools.py" line="171"/>
         <source>Add feature</source>
+        <comment>GeometryTool</comment>
         <translation>Object toevoegen</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="136"/>
+        <location filename="../geometry_shapes_tools.py" line="139"/>
         <source>Invalid dimensions (must be numeric and greater than zero)</source>
+        <comment>GeometryTool</comment>
         <translation>Ongeldige afmetingen (moet numeriek en groter dan nul zijn)</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="164"/>
+        <location filename="../geometry_shapes_tools.py" line="171"/>
         <source>No active polygon layer</source>
+        <comment>GeometryTool</comment>
         <translation>Geen actieve polygoonlaag</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="308"/>
+        <location filename="../geometry_shapes_tools.py" line="315"/>
         <source>Hold SHIFT to lock the ratio for perfect squares and circles</source>
-        <translation>Houd SHIFT ingedrukt voor perfecte circels en vierkanten</translation>
-    </message>
-    <message>
-        <location filename="../geometry_shapes_tools.py" line="121"/>
-        <source>Set size</source>
-        <translation>Afmetingen instellen</translation>
+        <comment>GeometryTool</comment>
+        <translation>Houd SHIFT ingedrukt voor perfecte cirkels en vierkanten</translation>
     </message>
 </context>
 <context>
     <name>OvalGeometryTool</name>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="320"/>
+        <location filename="../geometry_shapes_tools.py" line="327"/>
         <source>Radius (x)</source>
         <translation>Radius (x)</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="321"/>
+        <location filename="../geometry_shapes_tools.py" line="328"/>
         <source>Radius (y)</source>
         <translation>Radius (y)</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="357"/>
+        <location filename="../geometry_shapes_tools.py" line="365"/>
         <source>Radius</source>
         <translation>Radius</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="359"/>
+        <location filename="../geometry_shapes_tools.py" line="367"/>
         <source>Radius x/y</source>
         <translation>Radius x/y</translation>
     </message>
@@ -106,12 +111,12 @@
 <context>
     <name>RectangleGeometryTool</name>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="382"/>
+        <location filename="../geometry_shapes_tools.py" line="391"/>
         <source>Size</source>
         <translation>Afmetingen</translation>
     </message>
     <message>
-        <location filename="../geometry_shapes_tools.py" line="384"/>
+        <location filename="../geometry_shapes_tools.py" line="393"/>
         <source>Size x/y</source>
         <translation>Afmetingen x/y</translation>
     </message>

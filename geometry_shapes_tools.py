@@ -48,10 +48,10 @@ class GeometryTool(QgsMapTool):
         cursor = QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint)
         self.setCursor(cursor)
     
-    # noinspection PyMethodMayBeStatic
-    def tr(self, message):
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('GeometryShapes', message)
+    def tr(self, message, context=None):
+        if context is None:
+            context = self.__class__.__name__
+        return QCoreApplication.translate(context, message)
 
     def flags(self):
         return QgsMapTool.EditTool
@@ -110,18 +110,21 @@ class GeometryTool(QgsMapTool):
         endpoint = QgsPointXY(self.endPoint.x(), self.endPoint.y())
 
         rect = self.selection_rect()
-
-        # fixme: need to find out why this sometimes happens (when tool deactivated while dialog is open?)
         if not rect:
             self.reset()
             return
 
-        # fixme: use QGis project 'measurement units' in stead of project crs units (Qgis.DistanceUnits)
-        # fixme: set number of decimals for width and height based on zoom level 
-        title = '{} ({})'.format(self.tr(u"Set size"), QgsUnitTypes.toString(self.canvas.mapUnits()))
+        # convert the rectangle dimensions to the project distance units
+        map_units = self.canvas.mapUnits()
+        project_units = QgsProject.instance().distanceUnits()
+        conversion_factor = QgsUnitTypes.fromUnitToUnitFactor(map_units, project_units)
+        rect_width = rect.width() * conversion_factor
+        rect_height = rect.height() * conversion_factor
+
+        title = '{} ({})'.format(self.tr(u"Set size", 'GeometryTool'), QgsUnitTypes.toString(project_units))
         self.dlg.setWindowTitle(title)
-        self.dlg.width.setValue(rect.width())
-        self.dlg.height.setValue(rect.height())
+        self.dlg.width.setValue(rect_width)
+        self.dlg.height.setValue(rect_height)
 
         enable_segments = self.__class__.__name__ == 'OvalGeometryTool'
         self.dlg.label_segments.setEnabled(enable_segments)
@@ -133,24 +136,28 @@ class GeometryTool(QgsMapTool):
         if result:
             # check for a valid result from the dialog
             if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
-                iface.messageBar().pushMessage(self.tr(u"Add feature"),
-                    self.tr(u"Invalid dimensions (must be numeric and greater than zero)"),
+                iface.messageBar().pushMessage(self.tr(u"Add feature", 'GeometryTool'),
+                    self.tr(u"Invalid dimensions (must be numeric and greater than zero)", 'GeometryTool'),
                     level=QGis.Warning, duration=5)
                 self.reset()
                 return
 
-            # retrieve cached start- and endpoint and adjust based on entered dimensions
+            # retrieve cached start- and endpoint
             self.startPoint = startpoint
             self.endPoint = endpoint
+            # convert the dimensions back to the map units
+            dialog_width = self.dlg.width.value() / conversion_factor
+            dialog_height = self.dlg.height.value() / conversion_factor
+            # adjust the endPoint based on the startPoint and dialog dimensions
             if self.startPoint.x() < self.endPoint.x():
-                self.endPoint.setX(self.startPoint.x() + self.dlg.width.value())
+                self.endPoint.setX(self.startPoint.x() + dialog_width)
             else:
-                self.endPoint.setX(self.startPoint.x() - self.dlg.width.value())
+                self.endPoint.setX(self.startPoint.x() - dialog_width)
 
             if self.startPoint.y() < self.endPoint.y():
-                self.endPoint.setY(self.startPoint.y() + self.dlg.height.value())
+                self.endPoint.setY(self.startPoint.y() + dialog_height)
             else:
-                self.endPoint.setY(self.startPoint.y() - self.dlg.height.value())
+                self.endPoint.setY(self.startPoint.y() - dialog_height)
 
             self.add_feature_to_layer()
         else:
@@ -161,7 +168,7 @@ class GeometryTool(QgsMapTool):
             # there must be an active polygon layer
             layer = self.canvas.currentLayer()
             if not layer or layer.type() != QgsMapLayer.VectorLayer or layer.geometryType() != QgsWkbTypes.PolygonGeometry:
-                iface.messageBar().pushInfo(self.tr(u"Add feature"), self.tr(u"No active polygon layer"))
+                iface.messageBar().pushInfo(self.tr(u"Add feature", 'GeometryTool'), self.tr(u"No active polygon layer", 'GeometryTool'))
                 return
 
             if not self.capturing:
@@ -305,7 +312,7 @@ class GeometryTool(QgsMapTool):
 
     def activate(self):
         self.statusBar = iface.mainWindow().statusBar()
-        self.statusBar.showMessage(self.tr(u"Hold SHIFT to lock the ratio for perfect squares and circles"))
+        self.statusBar.showMessage(self.tr(u"Hold SHIFT to lock the ratio for perfect squares and circles", 'GeometryTool'))
         super(GeometryTool, self).activate()
 
     # fixme: use for further cleanup?
