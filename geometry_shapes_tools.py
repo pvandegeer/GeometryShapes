@@ -353,10 +353,11 @@ class OvalGeometryTool(GeometryTool):
         return geom
 
     def tooltip_text(self, rect):
+        precision = 5 if rect.width() < 1 or rect.height() < 1 else 2
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-            text = "{}: {}".format(self.tr(u"Radius"), round(rect.width(), 2))
+            text = "{}: {}".format(self.tr(u"Radius"), round(rect.width(), precision))
         else:
-            text = "{}: {} / {}".format(self.tr(u"Radius x/y"), round(rect.width(), 2), round(rect.height(), 2))
+            text = "{}: {} / {}".format(self.tr(u"Radius x/y"), round(rect.width(), precision), round(rect.height(), precision))
         return text
 
 
@@ -377,10 +378,10 @@ class RectangleGeometryTool(GeometryTool):
     def geometry(self, **kwargs):
         return QgsGeometry.fromRect(self.selection_rect())
 
-    # fixme: tooltip translation and variables not working
     def tooltip_text(self, rect):
+        precision = 5 if rect.width() < 1 or rect.height() < 1 else 2
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
-            text = "{}: {}".format(self.tr(u"Size"), round(rect.width(), 2))
+            text = "{}: {}".format(self.tr(u"Size"), round(rect.width(), precision))
         else:
-            text = "{}: {} / {}".format(self.tr(u"Size x/y"), round(rect.width(), 2), round(rect.height(), 2))
+            text = "{}: {} / {}".format(self.tr(u"Size x/y"), round(rect.width(), precision), round(rect.height(), precision))
         return text
