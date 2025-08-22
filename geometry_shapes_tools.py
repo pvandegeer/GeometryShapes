@@ -26,7 +26,7 @@ import math
 from qgis.PyQt.QtCore import Qt, QSettings, QCoreApplication
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication, QToolTip
-from qgis.core import Qgis as QGis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
+from qgis.core import Qgis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
     QgsGeometry, QgsMapLayer, QgsPointXY, QgsProject, QgsRectangle, QgsUnitTypes, QgsWkbTypes
 from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, QgsMessageBar
 from qgis.utils import iface
@@ -47,6 +47,13 @@ class GeometryTool(QgsMapTool):
 
         cursor = QgsApplication.getThemeCursor(QgsApplication.Cursor.CapturePoint)
         self.setCursor(cursor)
+
+    @property
+    def avoidIntersectionsMode(self):
+        if Qgis.versionInt() < 32600:
+            return QgsProject.AvoidIntersectionsMode
+        else:
+            return Qgis.AvoidIntersectionsMode
     
     def tr(self, message, context=None):
         if context is None:
@@ -138,7 +145,7 @@ class GeometryTool(QgsMapTool):
             if self.dlg.width.value() <= 0 or self.dlg.height.value() <= 0:
                 iface.messageBar().pushMessage(self.tr(u"Add feature", 'GeometryTool'),
                     self.tr(u"Invalid dimensions (must be numeric and greater than zero)", 'GeometryTool'),
-                    level=QGis.Warning, duration=5)
+                    level=Qgis.Warning, duration=5)
                 self.reset()
                 return
 
@@ -276,7 +283,8 @@ class GeometryTool(QgsMapTool):
 
     def transformed_geometry(self, layer):
         """
-        Takes a layer and returns the geometry shape as a QgsGeometry object in the that layer's CRS
+        Takes a layer and returns the geometry shape as a QgsGeometry object in that layer's CRS
+        and optionally avoids intersections based on project settings.
 
         :param layer: target layer for transformation
         :type layer: qgis.core.QgsMapLayer
@@ -292,6 +300,24 @@ class GeometryTool(QgsMapTool):
         if source_crs != layer.crs():
             geometry.transform(tr)
 
+        # Check if the project has 'avoid intersections' enabled and act accordingly, allow by default      
+        intersection_mode = self.avoidIntersectionsMode.AllowIntersections
+        if Qgis.versionInt() > 31400:
+            intersection_mode = QgsProject.instance().avoidIntersectionsMode() 
+            
+        if intersection_mode == self.avoidIntersectionsMode.AllowIntersections :
+            return geometry
+        
+        if intersection_mode == self.avoidIntersectionsMode.AvoidIntersectionsCurrentLayer:
+            layers_to_check = [self.canvas.currentLayer()]
+        elif intersection_mode == self.avoidIntersectionsMode.AvoidIntersectionsLayers:
+            layers_to_check = QgsProject.instance().avoidIntersectionsLayers()
+
+        if Qgis.versionInt() < 33400:
+            geometry.avoidIntersections(layers_to_check)
+        else:
+            geometry.avoidIntersectionsV2(layers_to_check)     
+        
         return geometry
 
     def selection_rect(self):

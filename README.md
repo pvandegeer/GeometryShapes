@@ -16,6 +16,7 @@ This QGis plugin draws basic geometry shapes with user defined measurements and 
     - Add internationalization
     - Show geometry size in project measurement units (m, ft, etc.)
     - Improve tooltips for smaller objects
+    - Avoid intersecting geometries is 'Avoid Overlap' is active is anabled in topology editing
 * Version 1.0 
     - Configurable # of segments for circles (pull request 6)
     - Drop suport for QGis 2
