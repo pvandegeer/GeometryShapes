@@ -24,13 +24,13 @@ import os.path
 from qgis.PyQt.QtCore import QSettings, QLocale, QTranslator, qVersion, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton
-from qgis.core import QgsMapLayer
-from qgis.core import QgsWkbTypes
+from qgis.core import QgsMapLayer, QgsWkbTypes
 
 from .resources3 import *
 from .geometry_shapes_tools import RectangleGeometryTool, OvalGeometryTool
 
-GeometryType = QgsWkbTypes.GeometryType 
+GeometryType = QgsWkbTypes.GeometryType
+
 
 class GeometryShapes:
     """QGIS Plugin Implementation."""
@@ -49,7 +49,7 @@ class GeometryShapes:
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        # initialize locale     
+        # initialize locale
         locale = QSettings().value('locale/userLocale', QLocale().name())[0:2]
         locale_path = os.path.join(
             self.plugin_dir,
@@ -231,7 +231,7 @@ class GeometryShapes:
     # and copyright 2016 by Loïc BARTOLETTI
     def toggle(self):
         layer = self.canvas.currentLayer()
-        
+
         # Decide whether the plugin button/menu is enabled or disabled
         if layer is None:
             self.actions[0].setEnabled(False)
@@ -240,12 +240,12 @@ class GeometryShapes:
             try:
                 # disconnect, will be reconnected
                 layer.editingStarted.disconnect(self.toggle)
-            except:
+            except Exception:
                 pass
             try:
                 # when it becomes active layer again
                 layer.editingStopped.disconnect(self.toggle)
-            except:
+            except Exception:
                 pass
 
             if layer.type() == QgsMapLayer.LayerType.VectorLayer and layer.geometryType() == GeometryType.PolygonGeometry:

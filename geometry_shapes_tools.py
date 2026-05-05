@@ -28,12 +28,13 @@ from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication, QToolTip
 from qgis.core import Qgis, QgsApplication, QgsCoordinateTransform, QgsExpression, QgsFeature, \
     QgsGeometry, QgsMapLayer, QgsPointXY, QgsProject, QgsRectangle, QgsUnitTypes, QgsWkbTypes
-from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, QgsMessageBar
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsAttributeEditorContext, QgsMessageBar # noqa: F401
 from qgis.utils import iface
 
 from .geometry_shapes_dialog import GeometryShapesDialog
 
-GeometryType = QgsWkbTypes.GeometryType 
+GeometryType = QgsWkbTypes.GeometryType
+
 
 class GeometryTool(QgsMapTool):
     def __init__(self, canvas):
@@ -111,7 +112,7 @@ class GeometryTool(QgsMapTool):
         to the active layer.
         """
         self.capturing = False
-  
+
         # cache start- and endpoints as in case the tool disappears
         # before the dialog is closed, so we can still access them
         startpoint = QgsPointXY(self.startPoint.x(), self.startPoint.y())
@@ -262,7 +263,7 @@ class GeometryTool(QgsMapTool):
                     context = layer.createExpressionContext()
                     value = QgsExpression(default_value).evaluate(context)
                     feature.setAttribute(idx, value)
-            
+
             ff = iface.getFeatureForm(layer, feature)
             ff.setMode(QgsAttributeEditorContext.AddFeatureMode)
             ff.accepted.connect(self.reset)
@@ -301,14 +302,14 @@ class GeometryTool(QgsMapTool):
         if source_crs != layer.crs():
             geometry.transform(tr)
 
-        # Check if the project has 'avoid intersections' enabled and act accordingly, allow by default      
+        # Check if the project has 'avoid intersections' enabled and act accordingly, allow by default
         intersection_mode = self.avoidIntersectionsMode.AllowIntersections
         if Qgis.versionInt() > 31400:
-            intersection_mode = QgsProject.instance().avoidIntersectionsMode() 
-            
+            intersection_mode = QgsProject.instance().avoidIntersectionsMode()
+
         if intersection_mode == self.avoidIntersectionsMode.AllowIntersections :
             return geometry
-        
+
         if intersection_mode == self.avoidIntersectionsMode.AvoidIntersectionsCurrentLayer:
             layers_to_check = [self.canvas.currentLayer()]
         elif intersection_mode == self.avoidIntersectionsMode.AvoidIntersectionsLayers:
