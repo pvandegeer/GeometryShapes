@@ -33,6 +33,7 @@ from qgis.utils import iface
 
 from .geometry_shapes_dialog import GeometryShapesDialog
 
+GeometryType = QgsWkbTypes.GeometryType 
 
 class GeometryTool(QgsMapTool):
     def __init__(self, canvas):
@@ -93,12 +94,12 @@ class GeometryTool(QgsMapTool):
                             settings.value('line_color_blue', 0, type=int),
                             settings.value('line_color_alpha', 199, type=int))
 
-        self.rubberBand = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
+        self.rubberBand = QgsRubberBand(self.canvas, GeometryType.PolygonGeometry)
         self.rubberBand.setColor(line_color)
         self.rubberBand.setFillColor(fill_color)
         self.rubberBand.setWidth(line_width)
-        self.helperBand = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry)
-        self.helperBand.setColor(Qt.gray)
+        self.helperBand = QgsRubberBand(self.canvas, GeometryType.PolygonGeometry)
+        self.helperBand.setColor(Qt.GlobalColor.gray)
         self.helperBand.setFillColor(QColor(0, 0, 0, 0))
         self.helperBand.setWidth(line_width)
 
@@ -138,7 +139,7 @@ class GeometryTool(QgsMapTool):
         self.dlg.segments.setEnabled(enable_segments)
 
         self.dlg.show()
-        result = self.dlg.exec_()
+        result = self.dlg.exec()
 
         if result:
             # check for a valid result from the dialog
@@ -171,10 +172,10 @@ class GeometryTool(QgsMapTool):
             self.reset()
 
     def canvasReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             # there must be an active polygon layer
             layer = self.canvas.currentLayer()
-            if not layer or layer.type() != QgsMapLayer.VectorLayer or layer.geometryType() != QgsWkbTypes.PolygonGeometry:
+            if not layer or layer.type() != QgsMapLayer.LayerType.VectorLayer or layer.geometryType() != GeometryType.PolygonGeometry:
                 iface.messageBar().pushInfo(self.tr(u"Add feature", 'GeometryTool'), self.tr(u"No active polygon layer", 'GeometryTool'))
                 return
 
@@ -185,11 +186,11 @@ class GeometryTool(QgsMapTool):
             else:
                 self.capture_position(event)
                 self.stop_capturing()
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt.MouseButton.RightButton:
             self.reset()
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.reset()
 
     def canvasMoveEvent(self, event):
@@ -211,7 +212,7 @@ class GeometryTool(QgsMapTool):
         :type event: qgis.gui.QgsMapMouseEvent
         """
         # adjust dimension on the fly if Shift is pressed
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             end_point = QgsPointXY(self.toMapCoordinates(event.pos()))
             rect = QgsRectangle(self.startPoint, end_point)
 
@@ -359,11 +360,11 @@ class OvalGeometryTool(GeometryTool):
             return
 
         geom = self.geometry()
-        self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
+        self.rubberBand.reset(GeometryType.PolygonGeometry)
         self.rubberBand.setToGeometry(geom, None)
         self.rubberBand.show()
 
-        self.helperBand.reset(QgsWkbTypes.PolygonGeometry)
+        self.helperBand.reset(GeometryType.PolygonGeometry)
         box = QgsGeometry.fromRect(geom.boundingBox())
         line = QgsGeometry.fromPolylineXY([self.startPoint, self.endPoint])
         self.helperBand.setToGeometry(box, None)
@@ -387,7 +388,7 @@ class OvalGeometryTool(GeometryTool):
 
     def tooltip_text(self, rect):
         precision = 5 if rect.width() < 1 or rect.height() < 1 else 2
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             text = "{}: {}".format(self.tr(u"Radius"), round(rect.width(), precision))
         else:
             text = "{}: {} / {}".format(self.tr(u"Radius x/y"), round(rect.width(), precision), round(rect.height(), precision))
@@ -399,12 +400,12 @@ class RectangleGeometryTool(GeometryTool):
         if self.startPoint.x() == self.endPoint.x() or self.startPoint.y() == self.endPoint.y():
             return
 
-        self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
+        self.rubberBand.reset(GeometryType.PolygonGeometry)
         self.rubberBand.setToGeometry(self.geometry(), None)
         self.rubberBand.show()
 
         line = QgsGeometry.fromPolylineXY([self.startPoint, self.endPoint])
-        self.helperBand.reset(QgsWkbTypes.LineGeometry)
+        self.helperBand.reset(GeometryType.LineGeometry)
         self.helperBand.setToGeometry(line, None)
         self.helperBand.show()
 
@@ -413,7 +414,7 @@ class RectangleGeometryTool(GeometryTool):
 
     def tooltip_text(self, rect):
         precision = 5 if rect.width() < 1 or rect.height() < 1 else 2
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             text = "{}: {}".format(self.tr(u"Size"), round(rect.width(), precision))
         else:
             text = "{}: {} / {}".format(self.tr(u"Size x/y"), round(rect.width(), precision), round(rect.height(), precision))

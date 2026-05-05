@@ -30,6 +30,7 @@ from qgis.core import QgsWkbTypes
 from .resources3 import *
 from .geometry_shapes_tools import RectangleGeometryTool, OvalGeometryTool
 
+GeometryType = QgsWkbTypes.GeometryType 
 
 class GeometryShapes:
     """QGIS Plugin Implementation."""
@@ -202,7 +203,7 @@ class GeometryShapes:
         self.popupMenu.addAction(self.actions[1])
         self.toolButton.setMenu(self.popupMenu)
         self.toolButton.setDefaultAction(self.actions[0])
-        self.toolButton.setPopupMode(QToolButton.MenuButtonPopup)
+        self.toolButton.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self.toolButtonAction = self.toolbar.insertWidget(self.toolbar.actions()[4], self.toolButton)
 
         self.rectangleTool = RectangleGeometryTool(self.canvas)
@@ -247,11 +248,11 @@ class GeometryShapes:
             except:
                 pass
 
-            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            if layer.type() == QgsMapLayer.LayerType.VectorLayer and layer.geometryType() == GeometryType.PolygonGeometry:
                 layer.editingStarted.connect(self.toggle)
                 layer.editingStopped.connect(self.toggle)
 
-            if layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PolygonGeometry and layer.isEditable() and layer.isValid():
+            if layer.type() == QgsMapLayer.LayerType.VectorLayer and layer.geometryType() == GeometryType.PolygonGeometry and layer.isEditable() and layer.isValid():
                 self.actions[0].setEnabled(True)
                 self.actions[1].setEnabled(True)
             else:

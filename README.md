@@ -12,6 +12,8 @@ This QGis plugin draws basic geometry shapes with user defined measurements and 
 
 ## Changelog
 
+* Version 1.2
+    - Make compatible with QGis 4 / Qt6
 * Version 1.1
     - Add internationalization
     - Show geometry size in project measurement units (m, ft, etc.)

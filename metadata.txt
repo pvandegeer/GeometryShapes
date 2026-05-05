@@ -1,9 +1,9 @@
 [general]
 name=Geometry Shapes
 qgisMinimumVersion=3.0
-qgisMaximumVersion=3.99
+qgisMaximumVersion=4.99
 description=This plugin draws basic geometry shapes (primitives) with user defined measurements
-version=1.1
+version=1.2
 author=P. van de Geer
 email=pvandegeer@gmail.com
 
@@ -13,7 +13,9 @@ tracker=https://github.com/pvandegeer/GeometryShapes/issues
 repository=https://github.com/pvandegeer/GeometryShapes
 
 changelog=
-    Version 1.1 
+    Version 1.2
+        Make compatible with QGis 4 / Qt6
+    Version 1.1
         Add internationalization
         Show geometry size in project measurement units (m, ft, etc.)
         Improve tooltips for smaller objects
@@ -34,6 +36,7 @@ homepage=https://github.com/pvandegeer/GeometryShapes
 category=Vector
 icon=geometry_shapes.png
 experimental=False
+supportsQt6=True
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
